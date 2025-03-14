@@ -1,0 +1,28 @@
+{
+  "name": "fookiki",
+  "version": "1.0.0",
+  "description": "A football game inspired by chess, featuring an NxN grid and player movement.",
+  "main": "src/main.js",
+  "scripts": {
+    "serve": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.2.0",
+    "vuex": "^4.0.0"
+  },
+  "devDependencies": {
+    "vite": "^2.0.0",
+    "@vitejs/plugin-vue": "^1.0.0"
+  },
+  "keywords": [
+    "vue",
+    "game",
+    "football",
+    "chess",
+    "grid"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
