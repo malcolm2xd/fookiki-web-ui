@@ -1,27 +1,40 @@
 <template>
-  <div id="app">
-    <GameView />
+  <div class="app">
+    <GameBoard />
   </div>
 </template>
 
-<script>
-import GameView from './views/GameView.vue';
+<script lang="ts">
+import { defineComponent, onMounted } from 'vue'
+import { useGameStore } from '@/stores/game'
+import GameBoard from '@/components/GameBoard.vue'
 
-export default {
+export default defineComponent({
   name: 'App',
   components: {
-    GameView
+    GameBoard
+  },
+  setup() {
+    const store = useGameStore()
+    
+    onMounted(() => {
+      store.initializeGame()
+    })
   }
-}
+})
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.app {
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f5f5f5;
+}
+
+h1 {
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  color: #333;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
 }
 </style>
