@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export type Team = 'blue' | 'red'
-export type Position = { row: number; col: number }
+export interface Position {
+  row: number
+  col: number
+}
 export type PlayerRole = 'G' | 'D' | 'M' | 'F'
 export type Player = {
   id: string
@@ -13,13 +16,41 @@ export type Player = {
   isCaptain: boolean
 }
 
+// Grid configuration
+export interface GridConfig {
+  playingField: {
+    cols: number
+    rows: number
+  }
+  extraSpace: {
+    cols: number  // Additional columns (1 for row numbers, 1 for empty column)
+    rows: number  // Additional rows (1 for column labels, 1 for empty row, 1 for goals)
+  }
+}
+
+export const DEFAULT_GRID_CONFIG: GridConfig = {
+  playingField: {
+    cols: 10,
+    rows: 16
+  },
+  extraSpace: {
+    cols: 2,  // 1 for row numbers + 1 empty column
+    rows: 3   // 1 for column labels + 1 empty row + 1 for goals
+  }
+}
+
+// Computed dimensions
+export const getTotalDimensions = (config: GridConfig) => ({
+  totalCols: config.playingField.cols + config.extraSpace.cols,
+  totalRows: config.playingField.rows + config.extraSpace.rows
+})
+
 export const useGameStore = defineStore('game', () => {
   // State
-  const gridWidth = ref(10)
-  const gridHeight = ref(16)
+  const gridConfig = ref<GridConfig>(DEFAULT_GRID_CONFIG)
   const currentTeam = ref<Team>('blue')
   const players = ref<Player[]>([])
-  const ballPosition = ref<Position>({ row: 8, col: 5 }) // Center of the grid
+  const ballPosition = ref<Position>({ row: 7, col: 4 }) // Center of the grid
   const selectedPlayerId = ref<string | null>(null)
   const validMoves = ref<Position[]>([])
   const gamePhase = ref<'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER'>('PLAYER_SELECTION')
@@ -27,11 +58,18 @@ export const useGameStore = defineStore('game', () => {
   const winner = ref<Team | null>(null)
 
   // Getters
+  const totalDimensions = computed(() => getTotalDimensions(gridConfig.value))
   const allPlayers = computed(() => players.value)
   const bluePlayers = computed(() => players.value.filter(p => p.team === 'blue'))
   const redPlayers = computed(() => players.value.filter(p => p.team === 'red'))
 
   // Actions
+  function setGridConfig(config: GridConfig) {
+    gridConfig.value = config
+    // Reset game when grid config changes
+    initializeGame()
+  }
+
   function initializeGame() {
     // Initialize players
     const bluePlayers: Player[] = []
@@ -165,8 +203,7 @@ export const useGameStore = defineStore('game', () => {
 
   return {
     // State
-    gridWidth,
-    gridHeight,
+    gridConfig,
     currentTeam,
     players,
     ballPosition,
@@ -177,11 +214,13 @@ export const useGameStore = defineStore('game', () => {
     winner,
     
     // Getters
+    totalDimensions,
     allPlayers,
     bluePlayers,
     redPlayers,
     
     // Actions
+    setGridConfig,
     initializeGame,
     selectPlayer,
     movePlayer,

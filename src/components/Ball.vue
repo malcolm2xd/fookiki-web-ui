@@ -1,5 +1,5 @@
 <template>
-  <div class="ball" :class="{ 'is-moving': isMoving }">
+  <div class="ball">
     <svg class="ball-circle" viewBox="0 0 100 100">
       <!-- White background circle -->
       <circle cx="50" cy="50" r="48" fill="white" stroke="black" stroke-width="2"/>
@@ -20,10 +20,6 @@ export default defineComponent({
     position: {
       type: Object as PropType<Position>,
       required: true
-    },
-    isMoving: {
-      type: Boolean,
-      default: false
     }
   }
 })

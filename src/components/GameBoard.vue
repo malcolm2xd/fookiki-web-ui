@@ -3,46 +3,42 @@
     <div class="game-board">
       <div class="playing-field">
         <!-- Row 1: Column Labels (A-J) -->
-        <div v-for="col in 12" :key="`col-${col}`" class="board-cell column-label">
-          {{ col === 1 || col === 12 ? '' : String.fromCharCode(64 + col - 1) }}
+        <div v-for="col in totalDimensions.totalCols" :key="`col-${col}`" class="board-cell column-label">
+          {{ col === 1 || col === totalDimensions.totalCols ? '' : String.fromCharCode(64 + col - 1) }}
         </div>
 
-        <!-- Row 2: Empty row -->
-        <!-- <div v-for="col in 11" :key="`empty-top-${col}`" class="board-cell" /> -->
-
         <!-- Row 3: Top Goal -->
-        <div v-for="col in 12" :key="`goal-top-${col}`" >
+        <div v-for="col in totalDimensions.totalCols" :key="`goal-top-${col}`" >
           <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-blue" />
         </div>
 
-        <!-- Rows 4-19: Playing Field -->
-        <template v-for="row in 16" :key="`row-${row}`">
+        <!-- Playing Field Rows -->
+        <template v-for="row in gridConfig.playingField.rows" :key="`row-${row}`">
           <!-- First column: Row numbers -->
           <div class="board-cell row-label">{{ row }}</div>
 
           <!-- Playing field cells -->
           <div 
-            v-for="col in 10" 
+            v-for="col in gridConfig.playingField.cols" 
             :key="`cell-${row}-${col}`"
             class="board-cell"
             :class="{
               'is-selectable': isPlayerSelectable(row - 1, col - 1),
               'is-valid-move': isValidMoveCell(row - 1, col - 1),
               'field-border-left': col === 1,
-              'field-border-right': col === 10,
+              'field-border-right': col === gridConfig.playingField.cols,
               'field-border-top': row === 1,
-              'field-border-bottom': row === 16,
-              'center-line': row === 8,
-
-              'penalty-border-left': col === 3 && ((row <= 4) || (row >= 13 && row <= 16)),
-              'penalty-border-right': col === 8 && ((row <= 4) || (row >= 13 && row <= 16)),
+              'field-border-bottom': row === gridConfig.playingField.rows,
+              'center-line': row === Math.floor(gridConfig.playingField.rows / 2),
+              'penalty-border-left': col === 3 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
+              'penalty-border-right': col === 8 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
               'penalty-border-top': row === 1 && col >= 3 && col <= 8,
               'penalty-border-bottom': (row === 4 && col >= 3 && col <= 8) ||
-                                     (row === 12 && col >= 3 && col <= 8),
+                                     (row === gridConfig.playingField.rows - 4 && col >= 3 && col <= 8),
               'field-corner-tl': col === 1 && row === 1,
-              'field-corner-tr': col === 10 && row === 1,
-              'field-corner-bl': col === 1 && row === 16,
-              'field-corner-br': col === 10 && row === 16
+              'field-corner-tr': col === gridConfig.playingField.cols && row === 1,
+              'field-corner-bl': col === 1 && row === gridConfig.playingField.rows,
+              'field-corner-br': col === gridConfig.playingField.cols && row === gridConfig.playingField.rows
             }"
             @click="handleCellClick(row - 1, col - 1)"
           />
@@ -50,8 +46,8 @@
           <div />
         </template>
 
-        <!-- Row 20: Bottom Goal -->
-        <div v-for="col in 12" :key="`goal-bottom-${col}`">
+        <!-- Bottom Goal -->
+        <div v-for="col in totalDimensions.totalCols" :key="`goal-bottom-${col}`">
           <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-red" />
         </div>
       </div>
@@ -71,10 +67,10 @@
         :is-moving="ballIsMoving"
         :style="{
           position: 'absolute',
-          top: `${(ballPosition.row + 3) * (100/19)}%`,
-          left: `${(ballPosition.col + 1) * (100/12)}%`,
-          width: `${100/12}%`,
-          height: `${100/19}%`
+          top: `${(ballPosition.row + 3) * (100/totalDimensions.totalRows)}%`,
+          left: `${(ballPosition.col + 1) * (100/totalDimensions.totalCols)}%`,
+          width: `${100/totalDimensions.totalCols}%`,
+          height: `${100/totalDimensions.totalRows}%`
         }"
         class="cell-content"
       />
@@ -99,8 +95,8 @@ export default defineComponent({
     const store = useGameStore()
     const ballIsMoving = ref(false)
     
-    const gridWidth = computed(() => 10)
-    const gridHeight = computed(() => 16)
+    const gridConfig = computed(() => store.gridConfig)
+    const totalDimensions = computed(() => store.totalDimensions)
     const players = computed(() => store.allPlayers)
     const ballPosition = computed(() => store.ballPosition)
     const currentTeam = computed(() => store.currentTeam)
@@ -108,33 +104,16 @@ export default defineComponent({
     const validMoves = computed(() => store.validMoves)
     const gamePhase = computed(() => store.gamePhase)
     
-    const boardStyle = computed(() => ({
-      gridTemplateRows: `repeat(${gridHeight.value + 2}, 1fr)`,
-      gridTemplateColumns: `repeat(${gridWidth.value}, 1fr)`,
-    }))
-    
-    const turnIndicatorText = computed(() => {
-      if (gamePhase.value === 'GAME_OVER') {
-        return `Game Over! ${store.winner?.toUpperCase()} team wins!`
-      }
-      
-      return `${currentTeam.value.toUpperCase()} team's turn - ${
-        gamePhase.value === 'PLAYER_SELECTION' ? 'Select a player' : 
-        gamePhase.value === 'PLAYER_MOVEMENT' ? 'Move player' : 
-        gamePhase.value === 'BALL_MOVEMENT' ? 'Move the ball' : ''
-      }`
-    })
-    
     const getPlayerPosition = (player: any) => {
-      const cellWidth = 100 / 12
-      const cellHeight = 100 / 19
+      const cellWidth = 100 / totalDimensions.value.totalCols
+      const cellHeight = 100 / totalDimensions.value.totalRows
       return {
         top: `${(player.position.row + 2) * cellHeight}%`,
         left: `${(player.position.col + 1) * cellWidth}%`,
         width: `${cellWidth}%`,
         height: `${cellHeight}%`,
-        transform: 'none',
-        transition: 'top 0.5s ease, left 0.5s ease',
+        position: 'absolute',
+        transform: 'none'
       }
     }
     
@@ -159,6 +138,7 @@ export default defineComponent({
     }
     
     const handleCellClick = async (row: number, col: number) => {
+      console.log('handleCellClick', row, col)
       if (gamePhase.value === 'PLAYER_SELECTION') {
         const playerAtPosition = players.value.find(p => 
           p.position.row === row && 
@@ -199,14 +179,12 @@ export default defineComponent({
     }
     
     return {
-      gridWidth,
-      gridHeight,
+      gridConfig,
+      totalDimensions,
       ballPosition,
       currentTeam,
       selectedPlayerId,
       allPlayers: players,
-      boardStyle,
-      turnIndicatorText,
       gamePhase,
       ballIsMoving,
       
@@ -239,6 +217,8 @@ export default defineComponent({
   border-radius: 8px;
   overflow: visible;
   /* box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); */
+  --total-rows: v-bind(totalDimensions.totalRows);
+  --total-cols: v-bind(totalDimensions.totalCols);
 }
 
 /* Grid labels */
@@ -282,8 +262,8 @@ export default defineComponent({
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: repeat(19, 1fr);
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(var(--total-rows), 1fr);
+  grid-template-columns: repeat(var(--total-cols), 1fr);
 }
 
 .board-row {
