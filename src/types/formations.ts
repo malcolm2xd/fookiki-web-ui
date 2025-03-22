@@ -20,7 +20,7 @@ export interface Formation {
 
 export const FORMATIONS: Record<string, Formation> = {
   'malformation': {
-    name: 'Malformation',
+    name: 'Mal-formation',
     description: 'Custom experimental formation',
     positions: {
       G: ['1E'],
@@ -38,7 +38,7 @@ export const FORMATIONS: Record<string, Formation> = {
       ],
       F: [
         '8E', // Fixed forward at E8
-        '7G'  // Second forward
+        '13E'  // Second forward
       ]
     }
   },

@@ -10,8 +10,18 @@
           </div>
 
           <!-- Row 3: Top Goal -->
-          <div v-for="col in totalDimensions.totalCols" :key="`goal-top-${col}`" >
-            <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-blue" />
+          <div v-for="col in totalDimensions.totalCols" :key="`goal-top-${col}`">
+            <div 
+              v-if="col >= 5 && col <= 8" 
+              class="goal-cell goal-cell-blue"
+              :class="{ 
+                'valid-move': isValidMove(-1, col - 2),
+                'clickable': isValidMove(-1, col - 2)
+              }"
+              @click="handleCellClick(-1, col - 2)"
+            >
+              <div v-if="isBallAtPosition(-1, col - 2)" class="ball">⚽</div>
+            </div>
           </div>
       
           <!-- Playing Field Rows -->
@@ -69,7 +79,17 @@
 
           <!-- Bottom Goal -->
           <div v-for="col in totalDimensions.totalCols" :key="`goal-bottom-${col}`">
-            <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-red" />
+            <div 
+              v-if="col >= 5 && col <= 8" 
+              class="goal-cell goal-cell-red"
+              :class="{ 
+                'valid-move': isValidMove(16, col - 2),
+                'clickable': isValidMove(16, col - 2)
+              }"
+              @click="handleCellClick(16, col - 2)"
+            >
+              <div v-if="isBallAtPosition(16, col - 2)" class="ball">⚽</div>
+            </div>
           </div>
         </div>
       </div>
@@ -111,14 +131,7 @@ export default defineComponent({
     }
 
     const handleCellClick = (row: number, col: number) => {
-      const position: Position = { row, col }
-      const player = getPlayerAtPosition(row, col)
-      
-      if (player) {
-        store.selectPlayer(player.id)
-      } else if (isValidMove(row, col)) {
-        store.movePlayer(position)
-      }
+      store.selectCell({ row, col })
     }
     
     return {
