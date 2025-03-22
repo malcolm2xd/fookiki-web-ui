@@ -3,6 +3,13 @@ import { ref, computed } from 'vue'
 import { Team, Player, Position, PlayerRole, getValidMoves } from '@/types/player'
 import { Formation, FORMATIONS } from '@/types/formations'
 
+// Convert from letter-number format (e.g., '3A') to Position
+function parsePosition(coord: string): Position {
+  const col = coord.charAt(1).charCodeAt(0) - 65 // Convert A-J to 0-9
+  const row = parseInt(coord.charAt(0)) - 1 // Convert 1-16 to 0-15
+  return { row, col }
+}
+
 // Grid configuration
 export interface GridConfig {
   playingField: {
@@ -37,7 +44,7 @@ export const useGameStore = defineStore('game', () => {
   const gridConfig = ref<GridConfig>(DEFAULT_GRID_CONFIG)
   const currentTeam = ref<Team>('blue')
   const players = ref<Player[]>([])
-  const ballPosition = ref<Position>({ row: 7, col: 4 }) // Center of the grid
+  const ballPosition = ref<Position>({ row: 8, col: 5 }) // F9 position
   const selectedPlayerId = ref<string | null>(null)
   const validMoves = ref<Position[]>([])
   const gamePhase = ref<'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER'>('PLAYER_SELECTION')
@@ -75,14 +82,17 @@ export const useGameStore = defineStore('game', () => {
     const formation = FORMATIONS[currentFormation.value]
     if (!formation) return
 
-    const createPlayer = (team: Team, role: PlayerRole, position: Position, id: string, isCaptain: boolean = false): Player => ({
-      id,
-      team,
-      role,
-      position: { ...position },
-      initialPosition: { ...position },
-      isCaptain
-    })
+    const createPlayer = (team: Team, role: PlayerRole, positionStr: string, id: string, isCaptain: boolean = false): Player => {
+      const position = parsePosition(positionStr)
+      return {
+        id,
+        team,
+        role,
+        position: { ...position },
+        initialPosition: { ...position },
+        isCaptain
+      }
+    }
 
     const bluePlayers: Player[] = [
       // Goalkeeper
@@ -197,7 +207,7 @@ export const useGameStore = defineStore('game', () => {
     players.value.forEach(player => {
       player.position = { ...player.initialPosition }
     })
-    ballPosition.value = { row: 7, col: 4 }
+    ballPosition.value = { row: 8, col: 5 } // F9 position
   }
 
   // Initialize game on store creation

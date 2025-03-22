@@ -56,6 +56,12 @@
                 <span class="player-role">{{ getPlayerAtPosition(row - 1, col - 1)?.role }}</span>
                 <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
               </div>
+              
+              <!-- Ball -->
+              <div 
+                v-if="isBallAtPosition(row - 1, col - 1)"
+                class="ball"
+              >⚽</div>
             </div>
             <!-- Empty last column -->
             <div />
@@ -90,9 +96,14 @@ export default defineComponent({
     const players = computed(() => store.allPlayers)
     const selectedPlayerId = computed(() => store.selectedPlayerId)
     const validMoves = computed(() => store.validMoves)
+    const ballPosition = computed(() => store.ballPosition)
 
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find(p => p.position.row === row && p.position.col === col)
+    }
+
+    const isBallAtPosition = (row: number, col: number) => {
+      return ballPosition.value.row === row && ballPosition.value.col === col
     }
 
     const isValidMove = (row: number, col: number) => {
@@ -116,6 +127,7 @@ export default defineComponent({
       selectedPlayerId,
       
       getPlayerAtPosition,
+      isBallAtPosition,
       isValidMove,
       handleCellClick
     }
@@ -419,6 +431,16 @@ export default defineComponent({
 
 .valid-move {
   background-color: rgba(76, 175, 80, 0.3) !important;
+}
+
+.ball {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  z-index: 2;
 }
 
 @media (max-width: 768px) {
