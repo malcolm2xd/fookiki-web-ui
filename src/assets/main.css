@@ -1,0 +1,83 @@
+/* Player and ball positioning */
+.player-container,
+.ball-container {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.player-circle,
+.ball-circle {
+  width: 70%;
+  height: 70%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.player-role {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  z-index: 1;
+}
+
+/* Custom styles that can't be easily achieved with Tailwind */
+.goal-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+.goal-cell-blue::before,
+.goal-cell-red::before {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .game-board-wrapper {
+    padding: 0.5rem;
+  }
+
+  .game-board {
+    width: 100%;
+    height: calc(100vw * 1.727);
+  }
+
+  .label-cell {
+    font-size: 0.75rem;
+  }
+
+  .player-role {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-board-wrapper {
+    padding: 0.25rem;
+  }
+
+  .label-cell {
+    font-size: 0.625rem;
+  }
+
+  .player-role {
+    font-size: 0.625rem;
+  }
+} 
