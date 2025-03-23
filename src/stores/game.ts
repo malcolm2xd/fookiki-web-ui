@@ -262,6 +262,8 @@ export const useGameStore = defineStore('game', {
           alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
           this.checkWinner()
           if (!this.winner) {
+            this.currentTeam = 'blue' // After red scores, blue gets the ball
+            console.log('resetting positions'+this.currentTeam)
             this.resetPositions()
           }
         } else if (position.row === 16) {
@@ -269,6 +271,8 @@ export const useGameStore = defineStore('game', {
           alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
           this.checkWinner()
           if (!this.winner) {
+            this.currentTeam = 'red' // After blue scores, red gets the ball
+            console.log('resetting positions'+this.currentTeam)
             this.resetPositions()
           }
         }
@@ -299,8 +303,16 @@ export const useGameStore = defineStore('game', {
       this.players.forEach(player => {
         player.position = { ...player.initialPosition }
       })
-      // Reset ball to center (F9 position)
-      this.ballPosition = { row: 8, col: 5 }
+      console.log(this.currentTeam)
+
+      // Place ball based on which team just scored
+      if (this.currentTeam === 'blue') {
+        // If blue team is current (meaning red just scored), place ball at 9E for blue to strike
+        this.ballPosition = { row: 8, col: 4 }
+      } else {
+        // If red team is current (meaning blue just scored), place ball at 8F for red to strike
+        this.ballPosition = { row: 7, col: 5 }
+      }
     },
 
     getAdjacentPlayers(position: Position): Player[] {
@@ -449,16 +461,16 @@ export const useGameStore = defineStore('game', {
                 alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.checkWinner();
                 if (!this.winner) {
-                  this.resetPositions();
                   this.currentTeam = 'blue'; // After red scores, blue gets the ball
+                  this.resetPositions();
                 }
               } else if (position.row === 16) {
                 this.score.blue++;
                 alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.checkWinner();
                 if (!this.winner) {
-                  this.resetPositions();
                   this.currentTeam = 'red'; // After blue scores, red gets the ball
+                  this.resetPositions();
                 }
               }
             } else {
