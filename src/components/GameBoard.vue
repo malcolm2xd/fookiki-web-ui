@@ -1,7 +1,10 @@
 <template>
   <div class="game-container">
-    <FormationSelector class="formation-selector" />
-    <div class="game-board-wrapper">
+    <div class="game-controls">
+      <FormationSelector class="formation-selector" />
+      <GameState class="game-state" />
+    </div>
+  <div class="game-board-wrapper">
       <div class="game-board">
         <div class="playing-field">
           <!-- Row 1: Column Labels (A-J) -->
@@ -21,9 +24,9 @@
               @click="handleCellClick(-1, col - 2)"
             >
               <div v-if="isBallAtPosition(-1, col - 2)" class="ball">⚽</div>
-            </div>
-          </div>
-      
+      </div>
+    </div>
+    
           <!-- Playing Field Rows -->
           <template v-for="row in gridConfig.playingField.rows" :key="`row-${row}`">
             <!-- First column: Row numbers -->
@@ -60,17 +63,20 @@
                 class="player"
                 :class="{
                   'player-blue': getPlayerAtPosition(row - 1, col - 1)?.team === 'blue',
-                  'player-selected': getPlayerAtPosition(row - 1, col - 1)?.id === selectedPlayerId
+                  'player-red': getPlayerAtPosition(row - 1, col - 1)?.team === 'red',
+                  'player-selected': getPlayerAtPosition(row - 1, col - 1)?.id === selectedPlayerId,
+                  'player-current-team': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam
                 }"
               >
                 <span class="player-role">{{ getPlayerAtPosition(row - 1, col - 1)?.role }}</span>
                 <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
-              </div>
-              
+      </div>
+      
               <!-- Ball -->
               <div 
                 v-if="isBallAtPosition(row - 1, col - 1)"
                 class="ball"
+                :class="{ 'clickable': canMoveBall }"
               >⚽</div>
             </div>
             <!-- Empty last column -->
@@ -91,7 +97,7 @@
               <div v-if="isBallAtPosition(16, col - 2)" class="ball">⚽</div>
             </div>
           </div>
-        </div>
+      </div>
       </div>
     </div>
   </div>
@@ -102,11 +108,13 @@ import { defineComponent, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
 import type { Position } from '@/types/player'
 import FormationSelector from './FormationSelector.vue'
+import GameState from './GameState.vue'
 
 export default defineComponent({
   name: 'GameBoard',
   components: {
-    FormationSelector
+    FormationSelector,
+    GameState
   },
   setup() {
     const store = useGameStore()
@@ -117,6 +125,8 @@ export default defineComponent({
     const selectedPlayerId = computed(() => store.selectedPlayerId)
     const validMoves = computed(() => store.validMoves)
     const ballPosition = computed(() => store.ballPosition)
+    const currentTeam = computed(() => store.currentTeam)
+    const canMoveBall = computed(() => store.canMoveBall)
 
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find(p => p.position.row === row && p.position.col === col)
@@ -131,6 +141,11 @@ export default defineComponent({
     }
 
     const handleCellClick = (row: number, col: number) => {
+      const player = getPlayerAtPosition(row, col)
+      // Only allow selecting players from the current team
+      if (player && player.team !== currentTeam.value) {
+        return
+      }
       store.selectCell({ row, col })
     }
     
@@ -138,11 +153,12 @@ export default defineComponent({
       gridConfig,
       totalDimensions,
       selectedPlayerId,
-      
+      currentTeam,
       getPlayerAtPosition,
       isBallAtPosition,
       isValidMove,
-      handleCellClick
+      handleCellClick,
+      canMoveBall
     }
   }
 })
@@ -156,6 +172,13 @@ export default defineComponent({
   padding: 1rem;
 }
 
+.game-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 250px;
+}
+
 .game-board-wrapper {
   width: 100%;
   height: 90vh;
@@ -166,13 +189,18 @@ export default defineComponent({
 }
 
 .game-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: transparent;  /* Changed back to transparent */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   width: min(100%, calc(90vh * 0.58)); /* 11:19 ratio */
   height: calc(width * 1.727); /* 19:11 ratio */
   margin: 0 auto;
-  background-color: transparent;
-  border-radius: 8px;
-  overflow: visible;
   --total-rows: v-bind(totalDimensions.totalRows);
   --total-cols: v-bind(totalDimensions.totalCols);
 }
@@ -214,7 +242,7 @@ export default defineComponent({
 }
 
 .board-cell:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.1);  /* Reverted to original hover color */
 }
 
 /* Center line */
@@ -411,9 +439,27 @@ export default defineComponent({
   justify-content: center;
   align-items: center;
   position: relative;
-  cursor: pointer;
   background-color: #1976D2;
   color: white;
+  transition: opacity 0.3s ease;
+}
+
+.player[class*="player-red"] {
+  background-color: #D32F2F;
+}
+
+.player[class*="player-current-team"] {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.player[class*="player-current-team"]:hover {
+  transform: scale(1.1);
+}
+
+.player:not([class*="player-current-team"]) {
+  opacity: 1;
+  cursor: default;
 }
 
 .player-selected {
@@ -439,7 +485,7 @@ export default defineComponent({
 }
 
 .clickable:hover {
-  background-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .valid-move {
@@ -454,6 +500,11 @@ export default defineComponent({
   align-items: center;
   font-size: 20px;
   z-index: 2;
+  cursor: default;
+}
+
+.ball.clickable {
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {
@@ -516,6 +567,85 @@ export default defineComponent({
     font-size: 0.6rem;
     top: -0.3rem;
     right: -0.3rem;
+  }
+}
+
+.cell {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.valid-move {
+    background-color: rgba(0, 255, 0, 0.2);
+    cursor: pointer;
+  }
+}
+
+.player {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s;
+
+  &.blue {
+    background-color: #3b82f6;
+  }
+
+  &.red {
+    background-color: #ef4444;
+  }
+
+  &.captain::after {
+    content: 'C';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #fbbf24;
+    color: black;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.ball {
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  z-index: 2;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.1);
   }
 }
 </style>
