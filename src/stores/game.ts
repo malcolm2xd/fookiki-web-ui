@@ -34,7 +34,7 @@ export const useGameStore = defineStore('game', {
     currentTeam: 'blue' as Team,
     players: [
       // Blue Team
-      createPlayer('blue', 'G', '3A', true),
+      createPlayer('blue', 'G', '3A'),
       createPlayer('blue', 'D', '4A'),
       createPlayer('blue', 'D', '4B'),
       createPlayer('blue', 'D', '4C'),
@@ -46,7 +46,7 @@ export const useGameStore = defineStore('game', {
       createPlayer('blue', 'F', '8B'),
       createPlayer('blue', 'F', '8C'),
       // Red Team
-      createPlayer('red', 'G', '14A', true),
+      createPlayer('red', 'G', '14A'),
       createPlayer('red', 'D', '13A'),
       createPlayer('red', 'D', '13B'),
       createPlayer('red', 'D', '13C'),
@@ -87,14 +87,7 @@ export const useGameStore = defineStore('game', {
         player,
         hasBall: state.ballPosition.row === position.row && state.ballPosition.col === position.col
       };
-    },
-    canMoveBall: (state) => {
-      const adjacentPlayers = state.players.filter(p => 
-        Math.abs(p.position.row - state.ballPosition.row) <= 1 && 
-        Math.abs(p.position.col - state.ballPosition.col) <= 1
-      );
-      return adjacentPlayers.some(p => p.team === state.currentTeam);
-    },
+    }
   },
 
   actions: {
@@ -136,7 +129,7 @@ export const useGameStore = defineStore('game', {
       const bluePlayers: Player[] = [
         // Goalkeeper
         ...formation.positions.G.map((pos, i) => 
-          createPlayer('blue', 'G', pos, true)
+          createPlayer('blue', 'G', pos)
         ),
         // Defenders
         ...formation.positions.D.map((pos, i) => 
@@ -156,7 +149,7 @@ export const useGameStore = defineStore('game', {
       const redPlayers: Player[] = [
         // Goalkeeper
         ...formation.positions.G.map((pos, i) => 
-          createPlayer('red', 'G', mirrorPosition(pos), true)
+          createPlayer('red', 'G', mirrorPosition(pos))
         ),
         // Defenders
         ...formation.positions.D.map((pos, i) => 
@@ -210,43 +203,6 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    selectPlayer(playerId: string) {
-      // Don't allow player selection if it's the first move
-      if (this.isFirstMove) return
-
-      const player = this.players.find(p => p.id === playerId)
-      if (!player) return
-
-      // Clear previous selection if clicking the same player
-      if (this.selectedPlayerId === playerId) {
-        this.selectedPlayerId = null
-        this.validMoves = []
-        return
-      }
-
-      this.selectedPlayerId = playerId
-      this.isBallSelected = false
-      // Get all possible moves
-      let possibleMoves = getValidMoves(player, player.position)
-      
-      // Filter out moves that would land on other players
-      possibleMoves = possibleMoves.filter(move => {
-        // Check if any player is at this position
-        const playerAtPosition = this.players.find(p => 
-          p.position.row === move.row && p.position.col === move.col
-        )
-        
-        // Check if ball is at this position
-        const ballAtPosition = 
-          this.ballPosition.row === move.row && 
-          this.ballPosition.col === move.col
-
-        return !playerAtPosition && !ballAtPosition
-      })
-
-      this.validMoves = possibleMoves
-    },
-
     selectBall() {
       if (this.isFirstMove) {
         // For first move, calculate valid moves based on all adjacent players of the current team
@@ -278,48 +234,6 @@ export const useGameStore = defineStore('game', {
           this.isBallSelected = false
         }
       }
-    },
-
-    movePlayer(position: Position) {
-      if (!this.selectedPlayer) return
-      
-      const player = this.selectedPlayer
-      player.position = position
-      
-      // Reset selection after moving
-      this.selectedPlayerId = null
-      this.validMoves = []
-    },
-
-    moveBall(position: Position) {
-      this.ballPosition = position
-      this.isBallSelected = false
-      
-      // Check for goal - only when ball is in a goal cell
-      const isInGoalCell = position.col >= 3 && position.col <= 6 && (position.row === -1 || position.row === 16)
-      
-      if (isInGoalCell) {
-        if (position.row === -1) {
-          this.score.red++
-          alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
-          this.checkWinner()
-          if (!this.winner) {
-            this.resetPositions()
-            this.currentTeam = 'blue' // After red scores, blue gets the ball
-          }
-        } else if (position.row === 16) {
-          this.score.blue++
-          alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
-          this.checkWinner()
-          if (!this.winner) {
-            this.resetPositions()
-            this.currentTeam = 'red' // After blue scores, red gets the ball
-          }
-        }
-      }
-      
-      this.isFirstMove = false
-      this.endTurn()
     },
 
     endTurn() {
