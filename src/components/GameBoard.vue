@@ -76,7 +76,11 @@
               <div 
                 v-if="isBallAtPosition(row - 1, col - 1)"
                 class="ball"
-                :class="{ 'clickable': canMoveBall }"
+                :class="{ 
+                  'clickable': canMoveBall,
+                  'ball-selected': isBallSelected
+                }"
+                @click="handleBallClick"
               >⚽</div>
             </div>
             <!-- Empty last column -->
@@ -127,6 +131,7 @@ export default defineComponent({
     const ballPosition = computed(() => store.ballPosition)
     const currentTeam = computed(() => store.currentTeam)
     const canMoveBall = computed(() => store.canMoveBall)
+    const isBallSelected = computed(() => store.isBallSelected)
 
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find(p => p.position.row === row && p.position.col === col)
@@ -140,12 +145,35 @@ export default defineComponent({
       return validMoves.value.some(move => move.row === row && move.col === col)
     }
 
+    const handleBallClick = () => {
+      store.selectBall()
+    }
+
     const handleCellClick = (row: number, col: number) => {
       const player = getPlayerAtPosition(row, col)
+      
+      // If clicking on a non-move area, unselect
+      if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
+        store.selectedPlayerId = null
+        store.isBallSelected = false
+        store.selectCell({ row: -1, col: -1 })
+        return
+      }
+      
       // Only allow selecting players from the current team
       if (player && player.team !== currentTeam.value) {
         return
       }
+      
+      // If clicking on a player from the current team, select it
+      if (player && player.team === currentTeam.value) {
+        store.selectedPlayerId = player.id
+        store.isBallSelected = false
+        store.selectCell({ row, col })
+        return
+      }
+      
+      // For ball movement
       store.selectCell({ row, col })
     }
     
@@ -158,7 +186,9 @@ export default defineComponent({
       isBallAtPosition,
       isValidMove,
       handleCellClick,
-      canMoveBall
+      handleBallClick,
+      canMoveBall,
+      isBallSelected
     }
   }
 })
@@ -493,14 +523,23 @@ export default defineComponent({
 }
 
 .ball {
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 20px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  background-color: white;
+  border-radius: 50%;
+  padding: 4px;
+  border: 2px solid #000;
   z-index: 2;
-  cursor: default;
+
+  &.ball-selected {
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 0 6px #ffd700;
+  }
 }
 
 .ball.clickable {

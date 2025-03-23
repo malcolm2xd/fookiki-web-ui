@@ -60,11 +60,13 @@ export const useGameStore = defineStore('game', {
     ] as Player[],
     ballPosition: { row: 8, col: 5 } as Position, // F9 position
     selectedPlayerId: null as string | null,
+    isBallSelected: false as boolean,
     validMoves: [] as Position[],
     gamePhase: 'BALL_MOVEMENT' as 'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER',
     score: { blue: 0, red: 0 },
     winner: null as Team | null,
     currentFormation: 'malformation' as string,
+    isFirstMove: true as boolean,
   }),
 
   getters: {
@@ -191,6 +193,7 @@ export const useGameStore = defineStore('game', {
       this.gamePhase = 'BALL_MOVEMENT'  // Start with ball movement phase
       this.score = { blue: 0, red: 0 }
       this.winner = null
+      this.isFirstMove = true
 
       // Set up initial ball movement options
       const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
@@ -203,10 +206,14 @@ export const useGameStore = defineStore('game', {
           getValidMoves(p, this.ballPosition, true).forEach(move => possibleBallMoves.add(move))
         })
         this.validMoves = Array.from(possibleBallMoves)
+        this.isBallSelected = true
       }
     },
 
     selectPlayer(playerId: string) {
+      // Don't allow player selection if it's the first move
+      if (this.isFirstMove) return
+
       const player = this.players.find(p => p.id === playerId)
       if (!player) return
 
@@ -218,6 +225,7 @@ export const useGameStore = defineStore('game', {
       }
 
       this.selectedPlayerId = playerId
+      this.isBallSelected = false
       // Get all possible moves
       let possibleMoves = getValidMoves(player, player.position)
       
@@ -239,6 +247,39 @@ export const useGameStore = defineStore('game', {
       this.validMoves = possibleMoves
     },
 
+    selectBall() {
+      if (this.isFirstMove) {
+        // For first move, calculate valid moves based on all adjacent players of the current team
+        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
+        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
+        
+        if (currentTeamAdjacentPlayers.length > 0) {
+          const possibleBallMoves = new Set<Position>()
+          currentTeamAdjacentPlayers.forEach(p => {
+            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move))
+          })
+          this.validMoves = Array.from(possibleBallMoves)
+          this.isBallSelected = true
+        }
+      } else {
+        // For subsequent moves, only allow ball movement if a player is adjacent
+        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
+        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
+        
+        if (currentTeamAdjacentPlayers.length > 0) {
+          const possibleBallMoves = new Set<Position>()
+          currentTeamAdjacentPlayers.forEach(p => {
+            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move))
+          })
+          this.validMoves = Array.from(possibleBallMoves)
+          this.isBallSelected = true
+        } else {
+          this.validMoves = []
+          this.isBallSelected = false
+        }
+      }
+    },
+
     movePlayer(position: Position) {
       if (!this.selectedPlayer) return
       
@@ -252,6 +293,7 @@ export const useGameStore = defineStore('game', {
 
     moveBall(position: Position) {
       this.ballPosition = position
+      this.isBallSelected = false
       
       // Check for goal - only when ball is in a goal cell
       const isInGoalCell = position.col >= 3 && position.col <= 6 && (position.row === -1 || position.row === 16)
@@ -262,22 +304,21 @@ export const useGameStore = defineStore('game', {
           alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
           this.checkWinner()
           if (!this.winner) {
-            this.currentTeam = 'blue' // After red scores, blue gets the ball
-            console.log('resetting positions'+this.currentTeam)
             this.resetPositions()
+            this.currentTeam = 'blue' // After red scores, blue gets the ball
           }
         } else if (position.row === 16) {
           this.score.blue++
           alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`)
           this.checkWinner()
           if (!this.winner) {
-            this.currentTeam = 'red' // After blue scores, red gets the ball
-            console.log('resetting positions'+this.currentTeam)
             this.resetPositions()
+            this.currentTeam = 'red' // After blue scores, red gets the ball
           }
         }
       }
       
+      this.isFirstMove = false
       this.endTurn()
     },
 
@@ -303,7 +344,6 @@ export const useGameStore = defineStore('game', {
       this.players.forEach(player => {
         player.position = { ...player.initialPosition }
       })
-      console.log(this.currentTeam)
 
       // Place ball based on which team just scored
       if (this.currentTeam === 'blue') {
@@ -312,6 +352,25 @@ export const useGameStore = defineStore('game', {
       } else {
         // If red team is current (meaning blue just scored), place ball at 8F for red to strike
         this.ballPosition = { row: 7, col: 5 }
+      }
+
+      // Reset selection states
+      this.selectedPlayerId = null
+      this.validMoves = []
+      this.isFirstMove = true
+
+      // Set up initial ball movement options
+      const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
+      const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
+      
+      if (currentTeamAdjacentPlayers.length > 0) {
+        // Calculate possible ball moves based on current team's adjacent players
+        const possibleBallMoves = new Set<Position>()
+        currentTeamAdjacentPlayers.forEach(p => {
+          this.getBallMoves(p).forEach(move => possibleBallMoves.add(move))
+        })
+        this.validMoves = Array.from(possibleBallMoves)
+        this.isBallSelected = true
       }
     },
 
@@ -347,46 +406,42 @@ export const useGameStore = defineStore('game', {
         }
       }
 
+      // Calculate the relative position of the player to the ball
+      const rowDiff = player.position.row - row
+      const colDiff = player.position.col - col
+
+      // Only allow moves in the direction the player is pushing from
       switch (player.role) {
         case 'G':
-          // Goalkeeper: 3 cells in any straight direction
+          // Goalkeeper: 3 cells in the direction they're pushing from
           for (let i = 1; i <= 3; i++) {
-            addMove(row - i, col)    // Up
-            addMove(row + i, col)    // Down
-            addMove(row, col - i)    // Left
-            addMove(row, col + i)    // Right
+            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
+            if (colDiff !== 0) addMove(row, col + (colDiff > 0 ? i : -i))
           }
           break
 
         case 'D':
-          // Defender: 2 cells vertically or horizontally
+          // Defender: 2 cells in the direction they're pushing from
           for (let i = 1; i <= 2; i++) {
-            addMove(row - i, col)    // Up
-            addMove(row + i, col)    // Down
-            addMove(row, col - i)    // Left
-            addMove(row, col + i)    // Right
+            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
+            if (colDiff !== 0) addMove(row, col + (colDiff > 0 ? i : -i))
           }
           break
 
         case 'M':
-          // Midfielder: 2 cells diagonally
+          // Midfielder: 2 cells diagonally in the direction they're pushing from
           for (let i = 1; i <= 2; i++) {
-            addMove(row - i, col - i)  // Up-Left
-            addMove(row - i, col + i)  // Up-Right
-            addMove(row + i, col - i)  // Down-Left
-            addMove(row + i, col + i)  // Down-Right
+            if (rowDiff !== 0 && colDiff !== 0) {
+              addMove(row + (rowDiff > 0 ? i : -i), col + (colDiff > 0 ? i : -i))
+            }
           }
           break
 
         case 'F':
-          // Forward: 4 cells vertically or 2 cells horizontally
+          // Forward: 4 cells vertically or 2 cells horizontally in the direction they're pushing from
           for (let i = 1; i <= 4; i++) {
-            if (i <= 2) {
-              addMove(row, col - i)    // Left
-              addMove(row, col + i)    // Right
-            }
-            addMove(row - i, col)    // Up
-            addMove(row + i, col)    // Down
+            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
+            if (colDiff !== 0 && i <= 2) addMove(row, col + (colDiff > 0 ? i : -i))
           }
           break
       }
@@ -418,6 +473,32 @@ export const useGameStore = defineStore('game', {
       const cell = this.getCell(position);
       if (!cell) return;
 
+      // If it's the first move, only allow ball movement
+      if (this.isFirstMove) {
+        if (cell.hasBall) {
+          // If clicking on the ball, calculate valid moves
+          const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+          const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
+          
+          if (currentTeamAdjacentPlayers.length > 0) {
+            const possibleBallMoves = new Set<Position>();
+            currentTeamAdjacentPlayers.forEach(p => {
+              this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
+            });
+            this.validMoves = Array.from(possibleBallMoves);
+            this.isBallSelected = true;
+          }
+        } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+          // Move the ball
+          this.ballPosition = position;
+          this.validMoves = [];
+          this.isBallSelected = false;
+          this.isFirstMove = false;
+          this.endTurn();
+        }
+        return;
+      }
+
       // If we have a selected player, first check if we can move the ball
       if (this.selectedPlayerId) {
         const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
@@ -435,6 +516,7 @@ export const useGameStore = defineStore('game', {
             this.validMoves = Array.from(possibleBallMoves);
             this.gamePhase = 'BALL_MOVEMENT';
             this.selectedPlayerId = null;
+            this.isBallSelected = true;
             return;
           }
         }
@@ -451,6 +533,7 @@ export const useGameStore = defineStore('game', {
           if (!wouldMoveOntoPlayer) {
             this.ballPosition = position;
             this.validMoves = [];
+            this.isBallSelected = false;
 
             // Check for goal
             const isInGoalCell = position.col >= 3 && position.col <= 6 && (position.row === -1 || position.row === 16);
@@ -489,11 +572,13 @@ export const useGameStore = defineStore('game', {
               this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
             });
             this.validMoves = Array.from(possibleBallMoves);
+            this.isBallSelected = true;
           }
         } else {
           // If clicking on an invalid ball move, switch to player selection
           this.gamePhase = 'PLAYER_SELECTION';
           this.validMoves = [];
+          this.isBallSelected = false;
           
           // If clicking on a player from the current team, select them immediately
           if (cell.player && cell.player.team === this.currentTeam) {
@@ -511,6 +596,7 @@ export const useGameStore = defineStore('game', {
           this.selectedPlayerId = cell.player.id;
           this.validMoves = this.calculateValidMoves(cell.player);
           this.gamePhase = 'PLAYER_MOVEMENT';
+          this.isBallSelected = false;
         }
       } else if (this.selectedPlayerId && this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
         const player = this.players.find(p => p.id === this.selectedPlayerId);
