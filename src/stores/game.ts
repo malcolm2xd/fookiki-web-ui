@@ -479,30 +479,21 @@ export const useGameStore = defineStore('game', {
             this.validMoves = Array.from(possibleBallMoves);
           }
         } else {
-          // If clicking on an invalid ball move, stay in ball movement phase
+          // If clicking on an invalid ball move, switch to player selection
+          this.gamePhase = 'PLAYER_SELECTION';
           this.validMoves = [];
+          
+          // If clicking on a player from the current team, select them immediately
+          if (cell.player && cell.player.team === this.currentTeam) {
+            this.selectedPlayerId = cell.player.id;
+            this.validMoves = this.calculateValidMoves(cell.player);
+            this.gamePhase = 'PLAYER_MOVEMENT';
+          }
         }
         return;
       }
 
-      // Handle player movement - only if not in first move
-      if (this.gamePhase === 'PLAYER_SELECTION' && this.score.blue === 0 && this.score.red === 0) {
-        // During first move, only allow ball movement
-        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
-        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-        
-        if (currentTeamAdjacentPlayers.length > 0) {
-          const possibleBallMoves = new Set<Position>();
-          currentTeamAdjacentPlayers.forEach(p => {
-            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
-          });
-          this.validMoves = Array.from(possibleBallMoves);
-          this.gamePhase = 'BALL_MOVEMENT';
-        }
-        return;
-      }
-
-      // Normal player movement logic after first move
+      // Handle player movement
       if (cell.player) {
         if (cell.player.team === this.currentTeam) {
           this.selectedPlayerId = cell.player.id;
@@ -517,19 +508,6 @@ export const useGameStore = defineStore('game', {
           this.validMoves = [];
           this.gamePhase = 'PLAYER_SELECTION';
           this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue';
-        }
-      } else if (this.gamePhase === 'PLAYER_SELECTION' && this.getAdjacentPlayers(this.ballPosition).some(p => p.team === this.currentTeam)) {
-        // Handle ball movement after player movement
-        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
-        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-        
-        if (currentTeamAdjacentPlayers.length > 0) {
-          const possibleBallMoves = new Set<Position>();
-          currentTeamAdjacentPlayers.forEach(p => {
-            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
-          });
-          this.validMoves = Array.from(possibleBallMoves);
-          this.gamePhase = 'BALL_MOVEMENT';
         }
       }
     },
