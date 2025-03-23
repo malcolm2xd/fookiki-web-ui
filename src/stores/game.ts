@@ -503,32 +503,23 @@ export const useGameStore = defineStore('game', {
         return;
       }
 
-      // If we have a selected player, first check if we can move the ball
-      if (this.selectedPlayerId) {
-        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
-        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-        
-        if (currentTeamAdjacentPlayers.length > 0) {
-          // Calculate possible ball moves based on current team's adjacent players
-          const possibleBallMoves = new Set<Position>();
-          currentTeamAdjacentPlayers.forEach(p => {
-            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
-          });
-          
-          // If clicking on the ball or a valid ball move position, switch to ball movement
-          if (cell.hasBall || possibleBallMoves.has(position)) {
-            this.validMoves = Array.from(possibleBallMoves);
-            this.gamePhase = 'BALL_MOVEMENT';
-            this.selectedPlayerId = null;
-            this.isBallSelected = true;
-            return;
-          }
-        }
-      }
-
       // Handle ball movement
-      if (this.gamePhase === 'BALL_MOVEMENT') {
-        if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+      if (this.gamePhase === 'BALL_MOVEMENT' || cell.hasBall) {
+        if (cell.hasBall) {
+          // If clicking on the ball, calculate valid moves
+          const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+          const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
+          
+          if (currentTeamAdjacentPlayers.length > 0) {
+            const possibleBallMoves = new Set<Position>();
+            currentTeamAdjacentPlayers.forEach(p => {
+              this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
+            });
+            this.validMoves = Array.from(possibleBallMoves);
+            this.isBallSelected = true;
+            this.gamePhase = 'BALL_MOVEMENT';
+          }
+        } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
           // Check if the ball would move onto a player
           const wouldMoveOntoPlayer = this.players.some(p => 
             p.position.row === position.row && p.position.col === position.col
@@ -564,19 +555,6 @@ export const useGameStore = defineStore('game', {
               this.gamePhase = 'PLAYER_SELECTION';
               this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue';
             }
-          }
-        } else if (cell.hasBall) {
-          // If clicking on the ball, calculate valid moves
-          const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
-          const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-          
-          if (currentTeamAdjacentPlayers.length > 0) {
-            const possibleBallMoves = new Set<Position>();
-            currentTeamAdjacentPlayers.forEach(p => {
-              this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
-            });
-            this.validMoves = Array.from(possibleBallMoves);
-            this.isBallSelected = true;
           }
         } else {
           // If clicking on an invalid ball move, switch to player selection
