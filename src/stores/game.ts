@@ -203,7 +203,7 @@ export const useGameStore = defineStore('game', {
         // Calculate possible ball moves based on current team's adjacent players
         const possibleBallMoves = new Set<Position>()
         currentTeamAdjacentPlayers.forEach(p => {
-          getValidMoves(p, this.ballPosition, true).forEach(move => possibleBallMoves.add(move))
+          this.getBallMoves(p).forEach(move => possibleBallMoves.add(move))
         })
         this.validMoves = Array.from(possibleBallMoves)
         this.isBallSelected = true
@@ -406,42 +406,46 @@ export const useGameStore = defineStore('game', {
         }
       }
 
-      // Calculate the relative position of the player to the ball
-      const rowDiff = player.position.row - row
-      const colDiff = player.position.col - col
-
-      // Only allow moves in the direction the player is pushing from
       switch (player.role) {
         case 'G':
-          // Goalkeeper: 3 cells in the direction they're pushing from
+          // Goalkeeper: 3 cells in any straight direction
           for (let i = 1; i <= 3; i++) {
-            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
-            if (colDiff !== 0) addMove(row, col + (colDiff > 0 ? i : -i))
+            addMove(row - i, col)    // Up
+            addMove(row + i, col)    // Down
+            addMove(row, col - i)    // Left
+            addMove(row, col + i)    // Right
           }
           break
 
         case 'D':
-          // Defender: 2 cells in the direction they're pushing from
+          // Defender: 2 cells vertically or horizontally
           for (let i = 1; i <= 2; i++) {
-            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
-            if (colDiff !== 0) addMove(row, col + (colDiff > 0 ? i : -i))
+            addMove(row - i, col)    // Up
+            addMove(row + i, col)    // Down
+            addMove(row, col - i)    // Left
+            addMove(row, col + i)    // Right
           }
           break
 
         case 'M':
-          // Midfielder: 2 cells diagonally in the direction they're pushing from
+          // Midfielder: 2 cells diagonally
           for (let i = 1; i <= 2; i++) {
-            if (rowDiff !== 0 && colDiff !== 0) {
-              addMove(row + (rowDiff > 0 ? i : -i), col + (colDiff > 0 ? i : -i))
-            }
+            addMove(row - i, col - i)  // Up-Left
+            addMove(row - i, col + i)  // Up-Right
+            addMove(row + i, col - i)  // Down-Left
+            addMove(row + i, col + i)  // Down-Right
           }
           break
 
         case 'F':
-          // Forward: 4 cells vertically or 2 cells horizontally in the direction they're pushing from
+          // Forward: 4 cells vertically or 2 cells horizontally
           for (let i = 1; i <= 4; i++) {
-            if (rowDiff !== 0) addMove(row + (rowDiff > 0 ? i : -i), col)
-            if (colDiff !== 0 && i <= 2) addMove(row, col + (colDiff > 0 ? i : -i))
+            addMove(row - i, col)    // Up
+            addMove(row + i, col)    // Down
+            if (i <= 2) {
+              addMove(row, col - i)    // Left
+              addMove(row, col + i)    // Right
+            }
           }
           break
       }
