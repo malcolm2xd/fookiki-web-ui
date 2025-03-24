@@ -73,9 +73,15 @@ export const useGameStore = defineStore('game', {
       duration: 10, // seconds per move
       warningThreshold: 3, // seconds before warning
       enabled: false, // whether timer is enabled
+      gameDuration: 300, // 5 minutes in seconds
     },
     timerState: {
       timeLeft: 10,
+      isRunning: false,
+      timerId: null as number | null,
+    },
+    gameTimerState: {
+      timeLeft: 0, // Will be set to timerConfig.gameDuration when game starts
       isRunning: false,
       timerId: null as number | null,
     },
@@ -214,8 +220,12 @@ export const useGameStore = defineStore('game', {
         this.isBallSelected = true
       }
 
-      // Start the timer for the first player
-      this.startTimer()
+      // Initialize game timer from config
+      this.gameTimerState.timeLeft = this.timerConfig.gameDuration;
+      this.startGameTimer();
+      if (this.timerConfig.enabled) {
+        this.startTimer();
+      }
     },
 
     selectBall() {
@@ -589,6 +599,51 @@ export const useGameStore = defineStore('game', {
       } else {
         this.stopTimer()
       }
+    },
+
+    startGameTimer() {
+      if (this.gameTimerState.timerId) return;
+      this.gameTimerState.isRunning = true;
+      this.gameTimerState.timerId = window.setInterval(() => {
+        if (this.gameTimerState.timeLeft > 0) {
+          this.gameTimerState.timeLeft--;
+        } else {
+          this.endGame();
+        }
+      }, 1000);
+    },
+
+    stopGameTimer() {
+      if (this.gameTimerState.timerId) {
+        clearInterval(this.gameTimerState.timerId)
+        this.gameTimerState.timerId = null
+      }
+      this.gameTimerState.isRunning = false
+    },
+
+    endGame() {
+      this.stopGameTimer()
+      this.stopTimer()
+      
+      // Determine winner based on score
+      if (this.score.blue > this.score.red) {
+        this.winner = 'blue'
+      } else if (this.score.red > this.score.blue) {
+        this.winner = 'red'
+      } else {
+        // If scores are tied, determine winner based on ball possession
+        const ballAdjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
+        const blueAdjacent = ballAdjacentPlayers.some(p => p.team === 'blue')
+        this.winner = blueAdjacent ? 'blue' : 'red'
+      }
+      
+      this.gamePhase = 'GAME_OVER'
+      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : 'Red'} team wins!`)
+      
+      // Reset the game after a short delay
+      setTimeout(() => {
+        this.initializeGame()
+      }, 2000)
     },
   },
 }) 

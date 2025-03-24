@@ -5,6 +5,7 @@
         <div class="team-name blue">Blue Team</div>
         <div class="score">{{ blueScore }}</div>
       </div>
+      <div class="game-timer">{{ gameTimeDisplay }}</div>
       <div class="team-score">
         <div class="team-name red">Red Team</div>
         <div class="score">{{ redScore }}</div>
@@ -29,6 +30,12 @@ export default defineComponent({
     const redScore = computed(() => store.redScore)
     const currentTeam = computed(() => store.currentTeam)
     
+    const gameTimeDisplay = computed(() => {
+      const minutes = Math.floor(store.gameTimerState.timeLeft / 60)
+      const seconds = store.gameTimerState.timeLeft % 60
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    })
+    
     const timerStyle = computed(() => {
       const teamColor = currentTeam.value === 'blue' ? '#1976D2' : '#D32F2F'
       
@@ -52,7 +59,8 @@ export default defineComponent({
       blueScore,
       redScore,
       currentTeam,
-      timerStyle
+      timerStyle,
+      gameTimeDisplay
     }
   }
 })
@@ -119,5 +127,17 @@ export default defineComponent({
 
 .timer-toggle:hover {
   background-color: #45a049;
+}
+
+.game-timer {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  text-shadow: 0 0 2px white;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  min-width: 80px;
+  text-align: center;
 }
 </style> 
