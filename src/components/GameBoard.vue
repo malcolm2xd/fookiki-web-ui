@@ -76,10 +76,7 @@
               <div 
                 v-if="isBallAtPosition(row - 1, col - 1)"
                 class="ball"
-                :class="{ 
-                  'clickable': canMoveBall,
-                  'ball-selected': isBallSelected
-                }"
+                :class="{ 'selected': isBallSelected }"
                 @click="handleBallClick"
               >⚽</div>
             </div>
@@ -130,7 +127,6 @@ export default defineComponent({
     const validMoves = computed(() => store.validMoves)
     const ballPosition = computed(() => store.ballPosition)
     const currentTeam = computed(() => store.currentTeam)
-    const canMoveBall = computed(() => store.canMoveBall)
     const isBallSelected = computed(() => store.isBallSelected)
 
     const getPlayerAtPosition = (row: number, col: number) => {
@@ -154,21 +150,18 @@ export default defineComponent({
       
       // If clicking on a non-move area, unselect
       if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
-        store.selectedPlayerId = null
-        store.isBallSelected = false
-        store.selectCell({ row: -1, col: -1 })
+        store.selectCell({ row, col })
         return
       }
       
       // Only allow selecting players from the current team
       if (player && player.team !== currentTeam.value) {
+        store.selectCell({ row, col })
         return
       }
       
       // If clicking on a player from the current team, select it
       if (player && player.team === currentTeam.value) {
-        store.selectedPlayerId = player.id
-        store.isBallSelected = false
         store.selectCell({ row, col })
         return
       }
@@ -187,7 +180,6 @@ export default defineComponent({
       isValidMove,
       handleCellClick,
       handleBallClick,
-      canMoveBall,
       isBallSelected
     }
   }
@@ -536,7 +528,7 @@ export default defineComponent({
   border: 2px solid #000;
   z-index: 2;
 
-  &.ball-selected {
+  &.selected {
     border: 3px solid #ffd700;
     box-shadow: 0 0 0 6px #ffd700;
   }
