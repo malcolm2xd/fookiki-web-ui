@@ -67,6 +67,18 @@ export const useGameStore = defineStore('game', {
     winner: null as Team | null,
     currentFormation: 'malformation' as string,
     isFirstMove: true as boolean,
+    blueScore: 0,
+    redScore: 0,
+    timerConfig: {
+      duration: 10, // seconds per move
+      warningThreshold: 3, // seconds before warning
+      enabled: false, // whether timer is enabled
+    },
+    timerState: {
+      timeLeft: 10,
+      isRunning: false,
+      timerId: null as number | null,
+    },
   }),
 
   getters: {
@@ -201,33 +213,53 @@ export const useGameStore = defineStore('game', {
         this.validMoves = Array.from(possibleBallMoves)
         this.isBallSelected = true
       }
+
+      // Start the timer for the first player
+      this.startTimer()
     },
 
     selectBall() {
-      // Calculate valid moves based on all adjacent players of the current team
-      const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
-      const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
+      if (this.isFirstMove) {
+        // For first move, only allow ball movement
+        const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+        const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
+        
+        if (currentTeamAdjacentPlayers.length > 0) {
+          const possibleBallMoves = new Set<Position>();
+          currentTeamAdjacentPlayers.forEach(p => {
+            this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
+          });
+          this.validMoves = Array.from(possibleBallMoves);
+          this.isBallSelected = true;
+          this.selectedPlayerId = null;
+        }
+        return;
+      }
+
+      // For subsequent moves, handle ball selection
+      const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+      const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
       
       if (currentTeamAdjacentPlayers.length > 0) {
-        const possibleBallMoves = new Set<Position>()
+        const possibleBallMoves = new Set<Position>();
         currentTeamAdjacentPlayers.forEach(p => {
-          this.getBallMoves(p).forEach(move => possibleBallMoves.add(move))
-        })
-        this.validMoves = Array.from(possibleBallMoves)
-        this.isBallSelected = true
-        this.gamePhase = 'BALL_MOVEMENT'
-      } else {
-        this.validMoves = []
-        this.isBallSelected = false
-        this.gamePhase = 'PLAYER_SELECTION'
+          this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
+        });
+        this.validMoves = Array.from(possibleBallMoves);
+        this.isBallSelected = true;
+        this.gamePhase = 'BALL_MOVEMENT';
+        this.selectedPlayerId = null;
       }
     },
 
     endTurn() {
+      this.stopTimer()
+      this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
       this.selectedPlayerId = null
       this.validMoves = []
+      this.isBallSelected = false
       this.gamePhase = 'PLAYER_SELECTION'
-      this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
+      this.startTimer() // Start timer for next player
     },
 
     checkWinner() {
@@ -470,8 +502,8 @@ export const useGameStore = defineStore('game', {
               }
             } else {
               this.gamePhase = 'PLAYER_SELECTION';
-              this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue';
             }
+            this.endTurn(); // End turn after a move is made
           }
         } else {
           // If clicking outside valid moves, clear selection
@@ -508,7 +540,7 @@ export const useGameStore = defineStore('game', {
             this.selectedPlayerId = null;
             this.validMoves = [];
             this.gamePhase = 'PLAYER_SELECTION';
-            this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue';
+            this.endTurn(); // End turn after a move is made
           }
         } else {
           // Clicking outside valid moves, clear selection
@@ -516,6 +548,46 @@ export const useGameStore = defineStore('game', {
           this.validMoves = [];
           this.gamePhase = 'PLAYER_SELECTION';
         }
+      }
+    },
+
+    startTimer() {
+      if (!this.timerConfig.enabled) return
+      
+      this.timerState.timeLeft = this.timerConfig.duration
+      this.timerState.isRunning = true
+      this.timerState.timerId = window.setInterval(() => {
+        if (this.timerState.timeLeft > 0) {
+          this.timerState.timeLeft--
+        } else {
+          this.endTurn()
+        }
+      }, 1000)
+    },
+
+    stopTimer() {
+      if (!this.timerConfig.enabled) return
+      
+      if (this.timerState.timerId) {
+        clearInterval(this.timerState.timerId)
+        this.timerState.timerId = null
+      }
+      this.timerState.isRunning = false
+    },
+
+    resetTimer() {
+      if (!this.timerConfig.enabled) return
+      
+      this.stopTimer()
+      this.timerState.timeLeft = this.timerConfig.duration
+    },
+
+    toggleTimer() {
+      this.timerConfig.enabled = !this.timerConfig.enabled
+      if (this.timerConfig.enabled) {
+        this.startTimer()
+      } else {
+        this.stopTimer()
       }
     },
   },
