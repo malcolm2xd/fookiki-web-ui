@@ -3,8 +3,13 @@
     <div class="game-controls">
       <FormationSelector class="formation-selector" />
       <GameState class="game-state" />
+      <button class="help-button" @click="showHelp = true">
+        <span class="help-icon">?</span>
+        Help
+      </button>
     </div>
-  <div class="game-board-wrapper">
+    <GameHelp :is-visible="showHelp" @close="showHelp = false" />
+    <div class="game-board-wrapper">
       <div class="game-board">
         <div class="playing-field">
           <!-- Row 1: Column Labels (A-J) -->
@@ -105,20 +110,23 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed } from 'vue'
+import { defineComponent, computed, ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import type { Position } from '@/types/player'
 import FormationSelector from './FormationSelector.vue'
 import GameState from './GameState.vue'
+import GameHelp from './GameHelp.vue'
 
 export default defineComponent({
   name: 'GameBoard',
   components: {
     FormationSelector,
-    GameState
+    GameState,
+    GameHelp
   },
   setup() {
     const store = useGameStore()
+    const showHelp = ref(false)
     
     const gridConfig = computed(() => store.gridConfig)
     const totalDimensions = computed(() => store.totalDimensions)
@@ -180,7 +188,8 @@ export default defineComponent({
       isValidMove,
       handleCellClick,
       handleBallClick,
-      isBallSelected
+      isBallSelected,
+      showHelp
     }
   }
 })
@@ -678,5 +687,36 @@ export default defineComponent({
   &:hover {
     transform: scale(1.1);
   }
+}
+
+.help-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #1976D2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.help-button:hover {
+  background-color: #1565C0;
+}
+
+.help-icon {
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  color: #1976D2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 </style>
