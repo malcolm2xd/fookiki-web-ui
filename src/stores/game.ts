@@ -124,7 +124,7 @@ export const useGameStore = defineStore('game', {
         
         return `${mirroredNumber}${mirroredLetter}`
       }
-
+      
       // Create blue team players
       const bluePlayers: Player[] = [
         // Goalkeeper
@@ -230,7 +230,7 @@ export const useGameStore = defineStore('game', {
           this.validMoves = Array.from(possibleBallMoves)
           this.isBallSelected = true
         } else {
-          this.validMoves = []
+      this.validMoves = []
           this.isBallSelected = false
         }
       }
