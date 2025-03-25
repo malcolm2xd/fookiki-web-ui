@@ -237,6 +237,7 @@ export const useGameStore = defineStore('game', {
         if (currentTeamAdjacentPlayers.length > 0) {
           const possibleBallMoves = new Set<Position>();
           currentTeamAdjacentPlayers.forEach(p => {
+            // Use getBallMoves which already includes the opponent blocking rules
             this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
           });
           this.validMoves = Array.from(possibleBallMoves);
@@ -329,7 +330,37 @@ export const useGameStore = defineStore('game', {
       const moves: Position[] = []
       const { row, col } = this.ballPosition
 
-      // Helper to add move if within bounds and not occupied
+      // Helper to check if a position is occupied by an opponent
+      const hasOpponent = (r: number, c: number): Player | null => {
+        return this.players.find(p => 
+          p.team !== player.team && 
+          p.position.row === r && 
+          p.position.col === c
+        ) || null
+      }
+
+      // Helper to check if a path is blocked by an opponent
+      const isPathBlocked = (startRow: number, startCol: number, endRow: number, endCol: number): boolean => {
+        const rowStep = endRow > startRow ? 1 : endRow < startRow ? -1 : 0
+        const colStep = endCol > startCol ? 1 : endCol < startCol ? -1 : 0
+        let currentRow = startRow
+        let currentCol = startCol
+
+        while (currentRow !== endRow || currentCol !== endCol) {
+          currentRow += rowStep
+          currentCol += colStep
+          const opponent = hasOpponent(currentRow, currentCol)
+          if (opponent) {
+            const canMovePast = this.canMovePastOpponent(player.role, opponent.role)
+            if (!canMovePast) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+
+      // Helper to add move if within bounds and not blocked
       const addMove = (r: number, c: number) => {
         // Allow goal cells (-1 and 16 for goals)
         const isGoal = (r === -1 || r === 16) && c >= 3 && c <= 6
@@ -338,13 +369,17 @@ export const useGameStore = defineStore('game', {
         
         // Check if position is valid (either within field or a goal cell)
         if (isGoal || isWithinField) {
-          // Check if position is occupied by a player
-          const isOccupied = this.players.some(p => 
-            p.position.row === r && p.position.col === c
+          // Check if position is occupied by any player
+          const playerAtPosition = this.players.find(p => 
+            p.position.row === r && 
+            p.position.col === c
           )
-          
-          if (!isOccupied) {
-            moves.push({ row: r, col: c })
+
+          if (!playerAtPosition) {
+            // Check if path is blocked by opponents
+            if (!isPathBlocked(row, col, r, c)) {
+              moves.push({ row: r, col: c })
+            }
           }
         }
       }
@@ -396,6 +431,45 @@ export const useGameStore = defineStore('game', {
       return moves
     },
 
+    // Helper to find space beyond an opponent
+    getSpaceBeyondOpponent(opponentRow: number, opponentCol: number, ballRow: number, ballCol: number): Position | null {
+      // Calculate direction from ball to opponent
+      const rowDiff = opponentRow - ballRow
+      const colDiff = opponentCol - ballCol
+      
+      // Calculate position beyond opponent
+      const beyondRow = opponentRow + (rowDiff > 0 ? 1 : rowDiff < 0 ? -1 : 0)
+      const beyondCol = opponentCol + (colDiff > 0 ? 1 : colDiff < 0 ? -1 : 0)
+      
+      // Check if the beyond position is valid and not occupied
+      const isWithinField = beyondRow >= 0 && beyondRow < this.gridConfig.playingField.rows &&
+                           beyondCol >= 0 && beyondCol < this.gridConfig.playingField.cols
+      
+      if (isWithinField) {
+        const isOccupied = this.players.some(p => 
+          p.position.row === beyondRow && p.position.col === beyondCol
+        )
+        
+        if (!isOccupied) {
+          return { row: beyondRow, col: beyondCol }
+        }
+      }
+      
+      return null
+    },
+
+    canMovePastOpponent(attackerRole: string, opponentRole: string): boolean {
+      // Define the movement rules based on the matrix
+      const movementRules: Record<string, Record<string, boolean>> = {
+        'G': { 'G': false, 'D': false, 'M': false, 'F': false },
+        'D': { 'G': false, 'D': true, 'M': true, 'F': false },
+        'M': { 'G': true, 'D': true, 'M': true, 'F': true },
+        'F': { 'G': false, 'D': false, 'M': true, 'F': false }
+      }
+
+      return movementRules[attackerRole]?.[opponentRole] ?? false
+    },
+
     calculateValidMoves(player: Player): Position[] {
       const moves = getValidMoves(player, player.position);
       return moves.filter(move => {
@@ -444,6 +518,30 @@ export const useGameStore = defineStore('game', {
             this.selectedPlayerId = null;
           }
         } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+          // Check if there's an opponent player at the target position
+          const opponentPlayer = this.players.find(p => 
+            p.team !== this.currentTeam && 
+            p.position.row === position.row && 
+            p.position.col === position.col
+          );
+
+          if (opponentPlayer) {
+            // Find the player who's moving the ball
+            const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+            const currentTeamAdjacentPlayer = adjacentPlayers.find(p => p.team === this.currentTeam);
+            
+            if (currentTeamAdjacentPlayer) {
+              const canMovePast = this.canMovePastOpponent(currentTeamAdjacentPlayer.role, opponentPlayer.role);
+              if (!canMovePast) {
+                // If cannot move past, clear selection and return
+                this.validMoves = [];
+                this.isBallSelected = false;
+                this.selectedPlayerId = null;
+                return;
+              }
+            }
+          }
+
           // Move the ball
           this.ballPosition = position;
           this.validMoves = [];
@@ -460,7 +558,7 @@ export const useGameStore = defineStore('game', {
         return;
       }
 
-      // Handle ball movement
+      // Handle ball movement for subsequent moves
       if (this.gamePhase === 'BALL_MOVEMENT' || cell.hasBall) {
         if (cell.hasBall) {
           // If clicking on the ball, calculate valid moves
@@ -478,6 +576,30 @@ export const useGameStore = defineStore('game', {
             this.selectedPlayerId = null;
           }
         } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+          // Check if there's an opponent player at the target position
+          const opponentPlayer = this.players.find(p => 
+            p.team !== this.currentTeam && 
+            p.position.row === position.row && 
+            p.position.col === position.col
+          );
+
+          if (opponentPlayer) {
+            // Find the player who's moving the ball
+            const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+            const currentTeamAdjacentPlayer = adjacentPlayers.find(p => p.team === this.currentTeam);
+            
+            if (currentTeamAdjacentPlayer) {
+              const canMovePast = this.canMovePastOpponent(currentTeamAdjacentPlayer.role, opponentPlayer.role);
+              if (!canMovePast) {
+                // If cannot move past, clear selection and return
+                this.validMoves = [];
+                this.isBallSelected = false;
+                this.selectedPlayerId = null;
+                return;
+              }
+            }
+          }
+
           // Check if the ball would move onto a player
           const wouldMoveOntoPlayer = this.players.some(p => 
             p.position.row === position.row && p.position.col === position.col
