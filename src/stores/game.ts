@@ -73,7 +73,7 @@ export const useGameStore = defineStore('game', {
       duration: 10, // seconds per move
       warningThreshold: 3, // seconds before warning
       enabled: true, // whether timer is enabled
-      gameDuration: 300, // 5 minutes in seconds
+      gameDuration: 30, // 5 minutes in seconds
       extraTimeDuration: 120, // 2 minutes in seconds
       extraTimeTurnDuration: 4, // 4 seconds per turn in extra time
     },
@@ -624,6 +624,7 @@ export const useGameStore = defineStore('game', {
             if (isInGoalCell) {
               if (position.row === -1) {
                 this.score.red++;
+                this.redScore++;
                 alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.checkWinner();
                 if (!this.winner) {
@@ -632,6 +633,7 @@ export const useGameStore = defineStore('game', {
                 }
               } else if (position.row === 16) {
                 this.score.blue++;
+                this.blueScore++;
                 alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.checkWinner();
                 if (!this.winner) {
@@ -779,7 +781,7 @@ export const useGameStore = defineStore('game', {
       }
       
       this.gamePhase = 'GAME_OVER'
-      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'Draw'} team wins!`)
+      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'It\'s a'} ${this.winner ? 'team wins!' : 'draw!'}`)
       
       // Reset the game after a short delay
       setTimeout(() => {

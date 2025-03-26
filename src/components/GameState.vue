@@ -5,7 +5,10 @@
         <div class="team-name blue">Blue Team</div>
         <div class="score">{{ blueScore }}</div>
       </div>
-      <div class="game-timer">{{ gameTimeDisplay }}</div>
+      <div class="game-timer">
+        {{ gameTimeDisplay }}
+        <div v-if="store.gameTimerState.isExtraTime" class="extra-time">Extra Time</div>
+      </div>
       <div class="team-score">
         <div class="team-name red">Red Team</div>
         <div class="score">{{ redScore }}</div>
@@ -37,20 +40,26 @@ export default defineComponent({
     })
     
     const timerStyle = computed(() => {
-      const teamColor = currentTeam.value === 'blue' ? '#1976D2' : '#D32F2F'
-      
+      const currentTeamColor = currentTeam.value === 'blue' ? '#1976D2' : '#D32F2F'
+      const progress = store.timerState.timeLeft / store.timerConfig.duration
+
       if (!store.timerConfig.enabled) {
         return {
-          background: teamColor,
+          background: currentTeamColor,
           transition: 'none'
         }
       }
-      
-      const progress = (store.timerState.timeLeft / store.timerConfig.duration) * 100
-      
-      return {
-        background: `linear-gradient(to right, ${teamColor} ${progress}%, transparent ${progress}%)`,
-        transition: store.timerState.isRunning ? 'background 1s linear' : 'none'
+
+      if (currentTeam.value === 'blue') {
+        return {
+          background: `linear-gradient(to left, ${currentTeamColor} ${progress * 100}%, transparent ${progress * 100}%)`,
+          transition: 'background 1s linear'
+        }
+      } else {
+        return {
+          background: `linear-gradient(to right, ${currentTeamColor} ${progress * 100}%, transparent ${progress * 100}%)`,
+          transition: 'background 1s linear'
+        }
       }
     })
 
@@ -139,5 +148,12 @@ export default defineComponent({
   border-radius: 4px;
   min-width: 80px;
   text-align: center;
+}
+
+.extra-time {
+  font-size: 0.8rem;
+  color: #FFA000;
+  font-weight: bold;
+  margin-top: 0.25rem;
 }
 </style> 
