@@ -63,7 +63,7 @@
             <li>The entire game lasts 5 minutes</li>
             <li>If move timer runs out, turn automatically switches to the other team</li>
             <li>If game timer runs out, the team with the highest score wins</li>
-            <li>In case of a tie when game timer runs out, the team with ball possession wins</li>
+            <li>If scores are equal when game timer runs out, the game ends in a draw</li>
           </ul>
         </section>
 

@@ -72,8 +72,10 @@ export const useGameStore = defineStore('game', {
     timerConfig: {
       duration: 10, // seconds per move
       warningThreshold: 3, // seconds before warning
-      enabled: false, // whether timer is enabled
+      enabled: true, // whether timer is enabled
       gameDuration: 300, // 5 minutes in seconds
+      extraTimeDuration: 120, // 2 minutes in seconds
+      extraTimeTurnDuration: 4, // 4 seconds per turn in extra time
     },
     timerState: {
       timeLeft: 10,
@@ -84,6 +86,7 @@ export const useGameStore = defineStore('game', {
       timeLeft: 0, // Will be set to timerConfig.gameDuration when game starts
       isRunning: false,
       timerId: null as number | null,
+      isExtraTime: false, // Track if we're in extra time
     },
   }),
 
@@ -220,11 +223,15 @@ export const useGameStore = defineStore('game', {
         this.isBallSelected = true
       }
 
+      // Reset extra time state
+      this.gameTimerState.isExtraTime = false
+      this.timerConfig.duration = 10 // Reset to normal turn duration
+
       // Initialize game timer from config
-      this.gameTimerState.timeLeft = this.timerConfig.gameDuration;
-      this.startGameTimer();
+      this.gameTimerState.timeLeft = this.timerConfig.gameDuration
+      this.startGameTimer()
       if (this.timerConfig.enabled) {
-        this.startTimer();
+        this.startTimer()
       }
     },
 
@@ -747,20 +754,32 @@ export const useGameStore = defineStore('game', {
       this.stopGameTimer()
       this.stopTimer()
       
+      // Check if scores are tied and we're not already in extra time
+      if (this.score.blue === this.score.red && !this.gameTimerState.isExtraTime) {
+        // Start extra time
+        this.gameTimerState.isExtraTime = true
+        this.gameTimerState.timeLeft = this.timerConfig.extraTimeDuration
+        this.timerConfig.duration = this.timerConfig.extraTimeTurnDuration
+        this.startGameTimer()
+        if (this.timerConfig.enabled) {
+          this.startTimer()
+        }
+        alert('Scores are tied! Starting extra time (2 minutes) with 4-second turns!')
+        return
+      }
+      
       // Determine winner based on score
       if (this.score.blue > this.score.red) {
         this.winner = 'blue'
       } else if (this.score.red > this.score.blue) {
         this.winner = 'red'
       } else {
-        // If scores are tied, determine winner based on ball possession
-        const ballAdjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
-        const blueAdjacent = ballAdjacentPlayers.some(p => p.team === 'blue')
-        this.winner = blueAdjacent ? 'blue' : 'red'
+        // If scores are tied after extra time, it's a draw
+        this.winner = null
       }
       
       this.gamePhase = 'GAME_OVER'
-      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : 'Red'} team wins!`)
+      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'Draw'} team wins!`)
       
       // Reset the game after a short delay
       setTimeout(() => {
