@@ -13,33 +13,37 @@
             <div class="player-type">
               <div class="player-icon player-blue">F</div>
               <div class="player-info">
-                <h4>Forward (F)</h4>
-                <p>Can move 4 cells vertically or 2 cells horizontally</p>
-                <p>Can move the ball over Midfielders</p>
+                <h4>Forward (F) - 2 players</h4>
+                <p>Movement: 2 cells in any direction</p>
+                <p>Ball Movement: 4 cells vertically or 2 cells horizontally</p>
+                <p>Can only move past midfielders</p>
               </div>
             </div>
             <div class="player-type">
               <div class="player-icon player-blue">M</div>
               <div class="player-info">
-                <h4>Midfielder (M)</h4>
-                <p>Can move 2 cells diagonally</p>
-                <p>Can move the ball over other Midfielders</p>
+                <h4>Midfielder (M) - 4 players</h4>
+                <p>Movement: 2 cells diagonally</p>
+                <p>Ball Movement: 2 cells diagonally</p>
+                <p>Can move past any opponent</p>
               </div>
             </div>
             <div class="player-type">
               <div class="player-icon player-blue">D</div>
               <div class="player-info">
-                <h4>Defender (D)</h4>
-                <p>Can move 2 cells vertically or horizontally</p>
-                <p>Cannot move the ball over any players</p>
+                <h4>Defender (D) - 4 players</h4>
+                <p>Movement: 2 cells horizontally or 1 cell vertically</p>
+                <p>Ball Movement: 2 cells vertically or horizontally</p>
+                <p>Can move past defenders and midfielders only</p>
               </div>
             </div>
             <div class="player-type">
               <div class="player-icon player-blue">G</div>
               <div class="player-info">
-                <h4>Goalkeeper (G)</h4>
-                <p>Can move 3 cells in any straight direction</p>
-                <p>Cannot move the ball over any players</p>
+                <h4>Goalkeeper (G) - 1 player</h4>
+                <p>Movement: 1 cell in any direction</p>
+                <p>Ball Movement: 3 cells in any straight direction</p>
+                <p>Cannot move past any opponent</p>
               </div>
             </div>
           </div>
@@ -49,18 +53,60 @@
           <h3>Game Rules</h3>
           <ul>
             <li>Each team takes turns moving players and the ball</li>
-            <li>Players can only move within their designated patterns</li>
-            <li>The ball can only be moved when a player from the current team is adjacent to it</li>
-            <li>Ball movement follows role-based hierarchy:
-              <ul>
-                <li>Forwards can move over Midfielders</li>
-                <li>Midfielders can move over other Midfielders</li>
-                <li>Defenders and Goalkeepers cannot move over any players</li>
-              </ul>
-            </li>
-            <li>The ball must land in an empty space</li>
-            <li>Players cannot move through or land on other players</li>
+            <li>Players can only move according to their role's movement pattern</li>
+            <li>The ball can only be moved by players adjacent to it</li>
+            <li>Players cannot move through or onto other players</li>
+            <li>Players cannot move onto the ball's position</li>
+            <li>Goals can only be scored from the designated goal areas</li>
+            <li>First team to score 3 goals wins</li>
+            <li>Each player has 30 seconds to make their move</li>
+            <li>The entire game lasts 5 minutes</li>
+            <li>If move timer runs out, turn automatically switches to the other team</li>
+            <li>If game timer runs out, the team with the highest score wins</li>
+            <li>In case of a tie when game timer runs out, the team with ball possession wins</li>
           </ul>
+        </section>
+
+        <section class="help-section">
+          <h3>Opponent Interaction Matrix</h3>
+          <p>This table shows which players can move past which opponents (✔️ = can move past, ❌ = cannot move past):</p>
+          <table class="interaction-matrix">
+            <tr>
+              <th>Attacker \ Opponent</th>
+              <th>Goalkeeper</th>
+              <th>Defender</th>
+              <th>Midfielder</th>
+              <th>Forward</th>
+            </tr>
+            <tr>
+              <td>Goalkeeper</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td>Defender</td>
+              <td>❌</td>
+              <td>✔️</td>
+              <td>✔️</td>
+              <td>❌</td>
+            </tr>
+            <tr>
+              <td>Midfielder</td>
+              <td>✔️</td>
+              <td>✔️</td>
+              <td>✔️</td>
+              <td>✔️</td>
+            </tr>
+            <tr>
+              <td>Forward</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✔️</td>
+              <td>❌</td>
+            </tr>
+          </table>
         </section>
 
         <section class="help-section">
@@ -228,6 +274,28 @@ ul, ol {
 li {
   margin: 0.5rem 0;
   color: #666;
+}
+
+.interaction-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.interaction-matrix th,
+.interaction-matrix td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.interaction-matrix th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.interaction-matrix tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 
 @media (max-width: 768px) {
