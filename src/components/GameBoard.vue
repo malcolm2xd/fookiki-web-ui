@@ -9,6 +9,7 @@
       </button>
     </div>
     <GameHelp :is-visible="showHelp" @close="showHelp = false" />
+    <CelebrationModal />
     <div class="game-board-wrapper">
       <div class="game-board">
         <div class="playing-field">
@@ -116,13 +117,15 @@ import type { Position } from '@/types/player'
 import FormationSelector from './FormationSelector.vue'
 import GameState from './GameState.vue'
 import GameHelp from './GameHelp.vue'
+import CelebrationModal from './CelebrationModal.vue'
 
 export default defineComponent({
   name: 'GameBoard',
   components: {
     FormationSelector,
     GameState,
-    GameHelp
+    GameHelp,
+    CelebrationModal
   },
   setup() {
     const store = useGameStore()

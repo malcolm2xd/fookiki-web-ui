@@ -69,13 +69,22 @@ export const useGameStore = defineStore('game', {
     isFirstMove: true as boolean,
     blueScore: 0,
     redScore: 0,
+    celebration: {
+      show: false,
+      team: null as Team | null,
+      message: '',
+    },
     timerConfig: {
       duration: 10, // seconds per move
-      warningThreshold: 3, // seconds before warning
-      enabled: true, // whether timer is enabled
+      warningThreshold: 3, // seconds
+      enabled: true,
       gameDuration: 300, // 5 minutes in seconds
-      extraTimeDuration: 120, // 2 minutes in seconds
-      extraTimeTurnDuration: 4, // 4 seconds per turn in extra time
+      extraTimeDuration: 300, // 5 minutes in seconds
+      extraTimeTurnDuration: 10, // 10 seconds per move in extra time
+      remainingTime: 10,
+      progress: 100,
+      isRunning: false,
+      timerId: undefined as number | undefined,
     },
     timerState: {
       timeLeft: 10,
@@ -651,12 +660,10 @@ export const useGameStore = defineStore('game', {
                 this.redScore++;
                 // Update ball position to show in goal
                 this.ballPosition = position;
-                // Stop timers before alert
+                // Stop timers before celebration
                 this.stopGameTimer();
                 this.stopTimer();
-                alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                // Restart timers after alert
-                this.startGameTimer();
+                this.showCelebration('red', `GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'blue'; // After red scores, blue gets the ball
                 this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
@@ -666,12 +673,10 @@ export const useGameStore = defineStore('game', {
                 this.blueScore++;
                 // Update ball position to show in goal
                 this.ballPosition = position;
-                // Stop timers before alert
+                // Stop timers before celebration
                 this.stopGameTimer();
                 this.stopTimer();
-                alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                // Restart timers after alert
-                this.startGameTimer();
+                this.showCelebration('blue', `GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'red'; // After blue scores, red gets the ball
                 this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
@@ -753,10 +758,16 @@ export const useGameStore = defineStore('game', {
     },
 
     resetTimer() {
-      if (!this.timerConfig.enabled) return
+      if (!this.timerConfig.enabled) return;
       
-      this.stopTimer()
-      this.timerState.timeLeft = this.timerConfig.duration
+      this.stopTimer();
+      this.timerConfig.remainingTime = this.timerConfig.duration;
+      this.timerConfig.progress = 100;
+      this.timerConfig.isRunning = false;
+      if (this.timerConfig.timerId) {
+        clearInterval(this.timerConfig.timerId);
+        this.timerConfig.timerId = undefined;
+      }
     },
 
     toggleTimer() {
@@ -836,6 +847,48 @@ export const useGameStore = defineStore('game', {
       setTimeout(() => {
         this.initializeGame()
       }, 2000)
+    },
+
+    showCelebration(team: Team, message: string) {
+      // Stop both timers before showing the modal
+      this.stopGameTimer();
+      this.stopTimer();
+      this.celebration = {
+        show: true,
+        team,
+        message,
+      };
+    },
+
+    hideCelebration() {
+      this.celebration.show = false;
+      this.celebration.team = null;
+      this.celebration.message = '';
+      // Restart the game timer when the modal is dismissed
+      this.startGameTimer();
+      // The turn timer will be started by the goal scoring logic
+    },
+
+    checkGoal() {
+      const { row, col } = this.ballPosition;
+      if (row === -1) {
+        // Blue team scored
+        this.blueScore++;
+        this.ballPosition = { row: 15, col: 5 }; // Show ball in goal
+        this.showCelebration('blue', 'GOAL! Blue team scores!');
+        this.resetPositions();
+        this.currentTeam = 'red';
+        return true;
+      } else if (row === 16) {
+        // Red team scored
+        this.redScore++;
+        this.ballPosition = { row: 0, col: 5 }; // Show ball in goal
+        this.showCelebration('red', 'GOAL! Red team scores!');
+        this.resetPositions();
+        this.currentTeam = 'blue';
+        return true;
+      }
+      return false;
     },
   },
 }) 
