@@ -73,7 +73,7 @@ export const useGameStore = defineStore('game', {
       duration: 10, // seconds per move
       warningThreshold: 3, // seconds before warning
       enabled: true, // whether timer is enabled
-      gameDuration: 30, // 5 minutes in seconds
+      gameDuration: 300, // 5 minutes in seconds
       extraTimeDuration: 120, // 2 minutes in seconds
       extraTimeTurnDuration: 4, // 4 seconds per turn in extra time
     },
@@ -296,13 +296,23 @@ export const useGameStore = defineStore('game', {
         player.position = { ...player.initialPosition }
       })
 
-      // Place ball based on which team just scored
-      if (this.currentTeam === 'blue') {
-        // If blue team is current (meaning red just scored), place ball at 9E for blue to strike
-        this.ballPosition = { row: 8, col: 4 }
+      // Find the current team's forward player
+      const currentTeamForward = this.players.find(p => 
+        p.team === this.currentTeam && 
+        p.role === 'F'
+      )
+
+      if (currentTeamForward) {
+        // Place the ball in front of the forward across the half line
+        this.ballPosition = {
+          row: this.currentTeam === 'blue' ? 8 : 7,  // Half line for blue, one row above for red
+          col: currentTeamForward.position.col
+        }
       } else {
-        // If red team is current (meaning blue just scored), place ball at 8F for red to strike
-        this.ballPosition = { row: 7, col: 5 }
+        // Fallback position if no forward is found
+        this.ballPosition = this.currentTeam === 'blue' 
+          ? { row: 8, col: 4 }  // E9 position for blue
+          : { row: 7, col: 5 }  // F8 position for red
       }
 
       // Reset selection states
@@ -385,7 +395,7 @@ export const useGameStore = defineStore('game', {
           if (!playerAtPosition) {
             // Check if path is blocked by opponents
             if (!isPathBlocked(row, col, r, c)) {
-              moves.push({ row: r, col: c })
+            moves.push({ row: r, col: c })
             }
           }
         }
@@ -626,25 +636,19 @@ export const useGameStore = defineStore('game', {
                 this.score.red++;
                 this.redScore++;
                 alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                this.checkWinner();
-                if (!this.winner) {
-                  this.currentTeam = 'blue'; // After red scores, blue gets the ball
-                  this.resetPositions();
-                }
+                this.currentTeam = 'blue'; // After red scores, blue gets the ball
+                this.resetPositions();
               } else if (position.row === 16) {
                 this.score.blue++;
                 this.blueScore++;
                 alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                this.checkWinner();
-                if (!this.winner) {
-                  this.currentTeam = 'red'; // After blue scores, red gets the ball
-                  this.resetPositions();
-                }
+                this.currentTeam = 'red'; // After blue scores, red gets the ball
+                this.resetPositions();
               }
             } else {
               this.gamePhase = 'PLAYER_SELECTION';
+              this.endTurn(); // Only end turn if not a goal
             }
-            this.endTurn(); // End turn after a move is made
           }
         } else {
           // If clicking outside valid moves, clear selection
@@ -769,7 +773,7 @@ export const useGameStore = defineStore('game', {
         alert('Scores are tied! Starting extra time (2 minutes) with 4-second turns!')
         return
       }
-      
+
       // Determine winner based on score
       if (this.score.blue > this.score.red) {
         this.winner = 'blue'
