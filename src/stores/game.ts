@@ -129,6 +129,24 @@ export const useGameStore = defineStore('game', {
       const formation = FORMATIONS[this.currentFormation]
       if (!formation) return
 
+      // Clean up any existing timers first
+      this.stopGameTimer()
+      this.stopTimer()
+      
+      // Reset timer states
+      this.timerState = {
+        timeLeft: this.timerConfig.duration,
+        isRunning: false,
+        timerId: null
+      }
+      
+      this.gameTimerState = {
+        timeLeft: this.timerConfig.gameDuration,
+        isRunning: false,
+        timerId: null,
+        isExtraTime: false
+      }
+
       // Helper function to mirror a position horizontally and vertically
       const mirrorPosition = (pos: string): string => {
         const letter = pos.slice(-1)
@@ -222,10 +240,6 @@ export const useGameStore = defineStore('game', {
         this.validMoves = Array.from(possibleBallMoves)
         this.isBallSelected = true
       }
-
-      // Reset extra time state
-      this.gameTimerState.isExtraTime = false
-      this.timerConfig.duration = 10 // Reset to normal turn duration
 
       // Initialize game timer from config
       this.gameTimerState.timeLeft = this.timerConfig.gameDuration
@@ -635,15 +649,33 @@ export const useGameStore = defineStore('game', {
               if (position.row === -1) {
                 this.score.red++;
                 this.redScore++;
+                // Update ball position to show in goal
+                this.ballPosition = position;
+                // Stop timers before alert
+                this.stopGameTimer();
+                this.stopTimer();
                 alert(`GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
+                // Restart timers after alert
+                this.startGameTimer();
                 this.currentTeam = 'blue'; // After red scores, blue gets the ball
                 this.resetPositions();
+                this.resetTimer(); // Reset turn timer for the new team
+                this.startTimer(); // Start the turn timer for the new team's ball move
               } else if (position.row === 16) {
                 this.score.blue++;
                 this.blueScore++;
+                // Update ball position to show in goal
+                this.ballPosition = position;
+                // Stop timers before alert
+                this.stopGameTimer();
+                this.stopTimer();
                 alert(`GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
+                // Restart timers after alert
+                this.startGameTimer();
                 this.currentTeam = 'red'; // After blue scores, red gets the ball
                 this.resetPositions();
+                this.resetTimer(); // Reset turn timer for the new team
+                this.startTimer(); // Start the turn timer for the new team's ball move
               }
             } else {
               this.gamePhase = 'PLAYER_SELECTION';
@@ -757,14 +789,27 @@ export const useGameStore = defineStore('game', {
     },
 
     endGame() {
+      // Clean up timers first
       this.stopGameTimer()
       this.stopTimer()
       
       // Check if scores are tied and we're not already in extra time
       if (this.score.blue === this.score.red && !this.gameTimerState.isExtraTime) {
+        // Reset timer states before starting extra time
+        this.timerState = {
+          timeLeft: this.timerConfig.extraTimeTurnDuration,
+          isRunning: false,
+          timerId: null
+        }
+        
+        this.gameTimerState = {
+          timeLeft: this.timerConfig.extraTimeDuration,
+          isRunning: false,
+          timerId: null,
+          isExtraTime: true
+        }
+        
         // Start extra time
-        this.gameTimerState.isExtraTime = true
-        this.gameTimerState.timeLeft = this.timerConfig.extraTimeDuration
         this.timerConfig.duration = this.timerConfig.extraTimeTurnDuration
         this.startGameTimer()
         if (this.timerConfig.enabled) {
