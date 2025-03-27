@@ -16,6 +16,10 @@ export interface Formation {
     M: string[]  // 4 Midfielders
     F: string[]  // 2 Forwards
   }
+  captains: {
+    blue: string
+    red: string
+  }
 }
 
 export const FORMATIONS: Record<string, Formation> = {
@@ -40,6 +44,10 @@ export const FORMATIONS: Record<string, Formation> = {
         '8E', // Fixed forward at E8
         '13E'  // Second forward
       ]
+    },
+    captains: {
+      blue: '6E',
+      red: '11F'
     }
   },
   '4-4-2-diamond': {
@@ -63,6 +71,10 @@ export const FORMATIONS: Record<string, Formation> = {
         '8E', // Fixed forward at E8
         '8G'  // Right striker
       ]
+    },
+    captains: {
+      blue: '7E',
+      red: '10F'
     }
   },
   '4-4-2-flat': {
@@ -86,6 +98,10 @@ export const FORMATIONS: Record<string, Formation> = {
         '8E', // Fixed forward at E8
         '8G'  // Right striker
       ]
+    },
+    captains: {
+      blue: '6D',
+      red: '11G'
     }
   },
   '4-1-3-2': {
@@ -109,6 +125,10 @@ export const FORMATIONS: Record<string, Formation> = {
         '8E', // Fixed forward at E8
         '8G'  // Right striker
       ]
+    },
+    captains: {
+      blue: '5E',
+      red: '12F'
     }
   },
   '4-2-2-2': {
@@ -132,6 +152,10 @@ export const FORMATIONS: Record<string, Formation> = {
         '8E', // Fixed forward at E8
         '8G'  // Right striker
       ]
+    },
+    captains: {
+      blue: '7D',
+      red: '10G'
     }
   }
 } 

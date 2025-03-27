@@ -75,8 +75,10 @@
                   'clickable': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected
                 }"
               >
-                <span class="player-role">{{ getPlayerAtPosition(row - 1, col - 1)?.role }}</span>
-                <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
+                <span class="player-role">
+                  {{ getPlayerAtPosition(row - 1, col - 1)?.role }}
+                  <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
+                </span>
               </div>
       
               <!-- Ball -->
@@ -507,14 +509,18 @@ export default defineComponent({
   font-weight: bold;
   font-size: 1rem;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 
 .captain-star {
-  position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
   color: #FFC107;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  margin-left: 2px;
+  display: inline-block;
 }
 
 .clickable {

@@ -6,6 +6,38 @@ import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
 import { FORMATIONS } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
 
+interface FormationConfig {
+  name: string;
+  description: string;
+  positions: {
+    G: string[];  // Goalkeeper positions
+    D: string[];  // Defender positions
+    M: string[];  // Midfielder positions
+    F: string[];  // Forward positions
+  };
+  captains: {
+    blue: string;  // Position string for blue team captain (e.g., '6A')
+    red: string;   // Position string for red team captain (e.g., '11A')
+  };
+}
+
+const formations: FormationConfig[] = [
+  {
+    name: '4-4-2',
+    description: 'Balanced formation with two forwards',
+    positions: {
+      G: ['3A'],
+      D: ['4A', '4B', '4C', '4D'],
+      M: ['6A', '6B', '6C', '6D'],
+      F: ['8A', '8B']
+    },
+    captains: {
+      blue: '6A',  // Blue team captain at 6A (midfielder)
+      red: '11A'   // Red team captain at 11A (midfielder)
+    }
+  }
+]
+
 // Convert from letter-number format (e.g., '3A') to Position
 function parsePosition(coord: string): Position {
   const letter = coord.slice(-1)  // Get last character (the letter)
@@ -16,8 +48,11 @@ function parsePosition(coord: string): Position {
 }
 
 // Helper function to create a player
-function createPlayer(team: Team, role: PlayerRole, positionStr: string, isCaptain: boolean = false): Player {
+function createPlayer(team: Team, role: PlayerRole, positionStr: string, formationName: string): Player {
   const position = parsePosition(positionStr)
+  const currentFormation = FORMATIONS['malformation'] // Use the correct formation key
+  const isCaptain = positionStr === currentFormation.captains[team]
+  
   return {
     id: `${team}-${role}-${positionStr}`,
     team,
@@ -34,29 +69,29 @@ export const useGameStore = defineStore('game', {
     currentTeam: 'blue' as Team,
     players: [
       // Blue Team
-      createPlayer('blue', 'G', '3A'),
-      createPlayer('blue', 'D', '4A'),
-      createPlayer('blue', 'D', '4B'),
-      createPlayer('blue', 'D', '4C'),
-      createPlayer('blue', 'D', '4D'),
-      createPlayer('blue', 'M', '6A'),
-      createPlayer('blue', 'M', '6B'),
-      createPlayer('blue', 'M', '6C'),
-      createPlayer('blue', 'F', '8A'),
-      createPlayer('blue', 'F', '8B'),
-      createPlayer('blue', 'F', '8C'),
+      createPlayer('blue', 'G', '3A', '4-4-2'),
+      createPlayer('blue', 'D', '4A', '4-4-2'),
+      createPlayer('blue', 'D', '4B', '4-4-2'),
+      createPlayer('blue', 'D', '4C', '4-4-2'),
+      createPlayer('blue', 'D', '4D', '4-4-2'),
+      createPlayer('blue', 'M', '6A', '4-4-2'), // Blue captain
+      createPlayer('blue', 'M', '6B', '4-4-2'),
+      createPlayer('blue', 'M', '6C', '4-4-2'),
+      createPlayer('blue', 'M', '6D', '4-4-2'),
+      createPlayer('blue', 'F', '8A', '4-4-2'),
+      createPlayer('blue', 'F', '8B', '4-4-2'),
       // Red Team
-      createPlayer('red', 'G', '14A'),
-      createPlayer('red', 'D', '13A'),
-      createPlayer('red', 'D', '13B'),
-      createPlayer('red', 'D', '13C'),
-      createPlayer('red', 'D', '13D'),
-      createPlayer('red', 'M', '11A'),
-      createPlayer('red', 'M', '11B'),
-      createPlayer('red', 'M', '11C'),
-      createPlayer('red', 'F', '9A'),
-      createPlayer('red', 'F', '9B'),
-      createPlayer('red', 'F', '9C'),
+      createPlayer('red', 'G', '11A', '4-4-2'),
+      createPlayer('red', 'D', '12A', '4-4-2'),
+      createPlayer('red', 'D', '12B', '4-4-2'),
+      createPlayer('red', 'D', '12C', '4-4-2'),
+      createPlayer('red', 'D', '12D', '4-4-2'),
+      createPlayer('red', 'M', '10A', '4-4-2'), // Red captain
+      createPlayer('red', 'M', '10B', '4-4-2'),
+      createPlayer('red', 'M', '10C', '4-4-2'),
+      createPlayer('red', 'M', '10D', '4-4-2'),
+      createPlayer('red', 'F', '14A', '4-4-2'),
+      createPlayer('red', 'F', '14B', '4-4-2'),
     ] as Player[],
     ballPosition: { row: 8, col: 5 } as Position, // F9 position
     selectedPlayerId: null as string | null,
@@ -97,6 +132,7 @@ export const useGameStore = defineStore('game', {
       timerId: null as number | null,
       isExtraTime: false, // Track if we're in extra time
     },
+    canCaptainMoveAgain: false, // Track if captain can move again
   }),
 
   getters: {
@@ -177,19 +213,19 @@ export const useGameStore = defineStore('game', {
       const bluePlayers: Player[] = [
         // Goalkeeper
         ...formation.positions.G.map((pos, i) => 
-          createPlayer('blue', 'G', pos)
+          createPlayer('blue', 'G', pos, formation.name)
         ),
         // Defenders
         ...formation.positions.D.map((pos, i) => 
-          createPlayer('blue', 'D', pos)
+          createPlayer('blue', 'D', pos, formation.name)
         ),
         // Midfielders
         ...formation.positions.M.map((pos, i) => 
-          createPlayer('blue', 'M', pos)
+          createPlayer('blue', 'M', pos, formation.name)
         ),
         // Forwards
         ...formation.positions.F.map((pos, i) => 
-          createPlayer('blue', 'F', pos)
+          createPlayer('blue', 'F', pos, formation.name)
         )
       ]
 
@@ -197,19 +233,19 @@ export const useGameStore = defineStore('game', {
       const redPlayers: Player[] = [
         // Goalkeeper
         ...formation.positions.G.map((pos, i) => 
-          createPlayer('red', 'G', mirrorPosition(pos))
+          createPlayer('red', 'G', mirrorPosition(pos), formation.name)
         ),
         // Defenders
         ...formation.positions.D.map((pos, i) => 
-          createPlayer('red', 'D', mirrorPosition(pos))
+          createPlayer('red', 'D', mirrorPosition(pos), formation.name)
         ),
         // Midfielders
         ...formation.positions.M.map((pos, i) => 
-          createPlayer('red', 'M', mirrorPosition(pos))
+          createPlayer('red', 'M', mirrorPosition(pos), formation.name)
         ),
         // Forwards
         ...formation.positions.F.map((pos, i) => 
-          createPlayer('red', 'F', mirrorPosition(pos))
+          createPlayer('red', 'F', mirrorPosition(pos), formation.name)
         )
       ]
 
@@ -295,11 +331,14 @@ export const useGameStore = defineStore('game', {
 
     endTurn() {
       this.stopTimer()
-      this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
+      if (!this.canCaptainMoveAgain) {
+        this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
+      }
       this.selectedPlayerId = null
       this.validMoves = []
       this.isBallSelected = false
       this.gamePhase = 'PLAYER_SELECTION'
+      this.canCaptainMoveAgain = false
       this.startTimer() // Start timer for next player
     },
 
@@ -646,6 +685,7 @@ export const useGameStore = defineStore('game', {
           );
           
           if (!wouldMoveOntoPlayer) {
+            const oldBallPosition = { ...this.ballPosition };
             this.ballPosition = position;
             this.validMoves = [];
             this.isBallSelected = false;
@@ -683,8 +723,32 @@ export const useGameStore = defineStore('game', {
                 this.startTimer(); // Start the turn timer for the new team's ball move
               }
             } else {
+              // Check for captain's special ability
+              const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
+              const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
+              
+              // Check if ball was passed to/from a captain
+              const wasPassedToCaptain = currentTeamAdjacentPlayers.some(p => p.isCaptain);
+              const wasPassedFromCaptain = this.getAdjacentPlayers(oldBallPosition).some(p => 
+                p.team === this.currentTeam && p.isCaptain
+              );
+
+              if (wasPassedToCaptain || wasPassedFromCaptain) {
+                // Captain can move again
+                this.canCaptainMoveAgain = true;
+                this.gamePhase = 'BALL_MOVEMENT';
+                // Calculate new valid moves
+                const possibleBallMoves = new Set<Position>();
+                currentTeamAdjacentPlayers.forEach(p => {
+                  this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
+                });
+                this.validMoves = Array.from(possibleBallMoves);
+                this.isBallSelected = true;
+                return;
+              }
+
               this.gamePhase = 'PLAYER_SELECTION';
-              this.endTurn(); // Only end turn if not a goal
+              this.endTurn(); // Only end turn if not a goal and no captain move
             }
           }
         } else {
