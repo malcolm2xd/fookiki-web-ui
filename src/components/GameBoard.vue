@@ -59,7 +59,7 @@
                 'field-corner-bl': col === 1 && row === gridConfig.playingField.rows,
                 'field-corner-br': col === gridConfig.playingField.cols && row === gridConfig.playingField.rows,
                 'valid-move': isValidMove(row - 1, col - 1),
-                'clickable': isValidMove(row - 1, col - 1) || getPlayerAtPosition(row - 1, col - 1)
+                'clickable': isValidMove(row - 1, col - 1) || (getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected)
               }"
               @click="handleCellClick(row - 1, col - 1)"
             >
@@ -71,12 +71,13 @@
                   'player-blue': getPlayerAtPosition(row - 1, col - 1)?.team === 'blue',
                   'player-red': getPlayerAtPosition(row - 1, col - 1)?.team === 'red',
                   'player-selected': getPlayerAtPosition(row - 1, col - 1)?.id === selectedPlayerId,
-                  'player-current-team': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam
+                  'player-current-team': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam,
+                  'clickable': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected
                 }"
               >
                 <span class="player-role">{{ getPlayerAtPosition(row - 1, col - 1)?.role }}</span>
                 <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
-      </div>
+              </div>
       
               <!-- Ball -->
               <div 
@@ -139,6 +140,7 @@ export default defineComponent({
     const ballPosition = computed(() => store.ballPosition)
     const currentTeam = computed(() => store.currentTeam)
     const isBallSelected = computed(() => store.isBallSelected)
+    const isFirstMove = computed(() => store.isFirstMove)
 
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find(p => p.position.row === row && p.position.col === col)
@@ -192,7 +194,8 @@ export default defineComponent({
       handleCellClick,
       handleBallClick,
       isBallSelected,
-      showHelp
+      showHelp,
+      isFirstMove
     }
   }
 })
