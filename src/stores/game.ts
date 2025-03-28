@@ -331,9 +331,8 @@ export const useGameStore = defineStore('game', {
 
     endTurn() {
       this.stopTimer()
-      if (!this.canCaptainMoveAgain) {
+      // Always switch teams after a move, regardless of captain's special ability
       this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
-      }
       this.selectedPlayerId = null
       this.validMoves = []
       this.isBallSelected = false
@@ -698,12 +697,15 @@ export const useGameStore = defineStore('game', {
               const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
               const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
               
-              // Check if ball was passed from a captain
+              // Check if ball was passed from a captain and captain hasn't used their special ability yet
               const wasPassedFromCaptain = this.getAdjacentPlayers(oldBallPosition).some(p => 
                 p.team === this.currentTeam && p.isCaptain
               );
 
-              if (wasPassedFromCaptain) {
+              // Check if the receiving player is a captain
+              const receivingPlayerIsCaptain = currentTeamAdjacentPlayers.some(p => p.isCaptain);
+
+              if (wasPassedFromCaptain && !this.canCaptainMoveAgain && !receivingPlayerIsCaptain) {
                 // Player receiving the ball from captain can move it again
                 this.gamePhase = 'BALL_MOVEMENT';
                 // Calculate new valid moves for ball movement only
@@ -713,6 +715,11 @@ export const useGameStore = defineStore('game', {
                 });
                 this.validMoves = Array.from(possibleBallMoves);
                 this.isBallSelected = true;
+                this.canCaptainMoveAgain = true; // Mark that captain has used their special ability
+                
+                // Reset turn timer for the receiving player
+                this.resetTimer();
+                this.startTimer();
                 return;
               }
 
