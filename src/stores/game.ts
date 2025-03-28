@@ -597,30 +597,6 @@ export const useGameStore = defineStore('game', {
             this.selectedPlayerId = null;
           }
         } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
-          // Check if there's an opponent player at the target position
-          const opponentPlayer = this.players.find(p => 
-            p.team !== this.currentTeam && 
-            p.position.row === position.row && 
-            p.position.col === position.col
-          );
-
-          if (opponentPlayer) {
-            // Find the player who's moving the ball
-            const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
-            const currentTeamAdjacentPlayer = adjacentPlayers.find(p => p.team === this.currentTeam);
-            
-            if (currentTeamAdjacentPlayer) {
-              const canMovePast = this.canMovePastOpponent(currentTeamAdjacentPlayer.role, opponentPlayer.role);
-              if (!canMovePast) {
-                // If cannot move past, clear selection and return
-                this.validMoves = [];
-                this.isBallSelected = false;
-                this.selectedPlayerId = null;
-                return;
-              }
-            }
-          }
-
           // Move the ball
           this.ballPosition = position;
           this.validMoves = [];
@@ -628,11 +604,6 @@ export const useGameStore = defineStore('game', {
           this.selectedPlayerId = null;
           this.isFirstMove = false;
           this.endTurn();
-        } else {
-          // If clicking outside valid moves, clear selection
-          this.validMoves = [];
-          this.isBallSelected = false;
-          this.selectedPlayerId = null;
         }
         return;
       }
@@ -704,8 +675,8 @@ export const useGameStore = defineStore('game', {
                 this.stopGameTimer();
                 this.stopTimer();
                 this.showCelebration('red', `GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                  this.currentTeam = 'blue'; // After red scores, blue gets the ball
-                  this.resetPositions();
+                this.currentTeam = 'blue'; // After red scores, blue gets the ball
+                this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
                 this.startTimer(); // Start the turn timer for the new team's ball move
               } else if (position.row === 16) {
@@ -717,8 +688,8 @@ export const useGameStore = defineStore('game', {
                 this.stopGameTimer();
                 this.stopTimer();
                 this.showCelebration('blue', `GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                  this.currentTeam = 'red'; // After blue scores, red gets the ball
-                  this.resetPositions();
+                this.currentTeam = 'red'; // After blue scores, red gets the ball
+                this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
                 this.startTimer(); // Start the turn timer for the new team's ball move
               }
@@ -727,17 +698,15 @@ export const useGameStore = defineStore('game', {
               const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
               const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
               
-              // Check if ball was passed to/from a captain
-              const wasPassedToCaptain = currentTeamAdjacentPlayers.some(p => p.isCaptain);
+              // Check if ball was passed from a captain
               const wasPassedFromCaptain = this.getAdjacentPlayers(oldBallPosition).some(p => 
                 p.team === this.currentTeam && p.isCaptain
               );
 
-              if (wasPassedToCaptain || wasPassedFromCaptain) {
-                // Captain can move again
-                this.canCaptainMoveAgain = true;
+              if (wasPassedFromCaptain) {
+                // Player receiving the ball from captain can move it again
                 this.gamePhase = 'BALL_MOVEMENT';
-                // Calculate new valid moves
+                // Calculate new valid moves for ball movement only
                 const possibleBallMoves = new Set<Position>();
                 currentTeamAdjacentPlayers.forEach(p => {
                   this.getBallMoves(p).forEach(move => possibleBallMoves.add(move));
