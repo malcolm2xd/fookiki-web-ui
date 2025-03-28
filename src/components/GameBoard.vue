@@ -506,9 +506,9 @@ export default defineComponent({
 }
 
 .player-role {
-  font-weight: bold;
-  font-size: 1rem;
-  z-index: 1;
+  font-size: 0.8rem;
+  color: #ffffff;
+  margin-top: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -516,11 +516,11 @@ export default defineComponent({
 }
 
 .captain-star {
-  color: #FFC107;
-  font-size: 1.2rem;
+  color: gold;
+  font-size: 0.7rem;
+  line-height: 0;
+  margin-top: -0.3rem;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-  margin-left: 2px;
-  display: inline-block;
 }
 
 .clickable {

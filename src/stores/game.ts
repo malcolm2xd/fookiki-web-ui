@@ -332,7 +332,7 @@ export const useGameStore = defineStore('game', {
     endTurn() {
       this.stopTimer()
       if (!this.canCaptainMoveAgain) {
-        this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
+      this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
       }
       this.selectedPlayerId = null
       this.validMoves = []
@@ -704,8 +704,8 @@ export const useGameStore = defineStore('game', {
                 this.stopGameTimer();
                 this.stopTimer();
                 this.showCelebration('red', `GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                this.currentTeam = 'blue'; // After red scores, blue gets the ball
-                this.resetPositions();
+                  this.currentTeam = 'blue'; // After red scores, blue gets the ball
+                  this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
                 this.startTimer(); // Start the turn timer for the new team's ball move
               } else if (position.row === 16) {
@@ -717,8 +717,8 @@ export const useGameStore = defineStore('game', {
                 this.stopGameTimer();
                 this.stopTimer();
                 this.showCelebration('blue', `GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
-                this.currentTeam = 'red'; // After blue scores, red gets the ball
-                this.resetPositions();
+                  this.currentTeam = 'red'; // After blue scores, red gets the ball
+                  this.resetPositions();
                 this.resetTimer(); // Reset turn timer for the new team
                 this.startTimer(); // Start the turn timer for the new team's ball move
               }

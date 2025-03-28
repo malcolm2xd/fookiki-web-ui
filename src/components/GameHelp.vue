@@ -126,6 +126,32 @@
             <li>End your turn when you're done moving</li>
           </ol>
         </section>
+
+        <section class="help-section">
+          <h3>Game Controls</h3>
+          <table class="help-table">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>Space</kbd></td>
+                <td>Start/Pause Game</td>
+              </tr>
+              <tr>
+                <td><kbd>R</kbd></td>
+                <td>Reset Game</td>
+              </tr>
+              <tr>
+                <td><kbd>H</kbd></td>
+                <td>Toggle Help</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
       </div>
     </div>
   </div>
