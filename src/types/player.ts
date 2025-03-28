@@ -89,83 +89,90 @@ export const MOVEMENT_RULES: Record<PlayerRole, MovementRule> = {
   }
 }
 
-export function getValidMoves(player: Player, position: Position, isForBall: boolean = false): Position[] {
-  const rule = MOVEMENT_RULES[player.role]
-  const moveRule = isForBall ? rule.ball : rule.piece
-  const validMoves: Position[] = []
+export function getValidMoves(player: Player, currentPosition: Position): Position[] {
+  const moves: Position[] = []
+  const { row, col } = currentPosition
+  const isBlueTeam = player.team === 'blue'
+  const direction = isBlueTeam ? 1 : -1
 
-  // Helper function to add valid moves
-  const addMove = (row: number, col: number) => {
-    if (row >= 0 && row < 16 && col >= 0 && col < 10) {
-      validMoves.push({ row, col })
-    }
-  }
+  switch (player.role) {
+    case 'F':
+      // Forward movement
+      moves.push(
+        { row: row + (4 * direction), col }, // 4 steps towards opponent goal
+        { row: row + (3 * direction), col }, // 4 steps towards opponent goal
+        { row: row + (2 * direction), col }, // 4 steps towards opponent goal
+        { row: row + (1 * direction), col }, // 4 steps towards opponent goal
+        { row: row - direction, col }, // 1 step towards team goal
+        { row, col: col + 1 }, // 1 step right
+        { row, col: col - 1 }  // 1 step left
+      )
+      break
+    default:
+      const rule = MOVEMENT_RULES[player.role]
+      const moveRule = rule.piece
+      const validMoves: Position[] = []
 
-  // Special handling for forwards to allow combined movements
-  if (player.role === 'F') {
-    // Generate all possible moves in a 5x5 area centered on the player
-    for (let rowDiff = -2; rowDiff <= 2; rowDiff++) {
-      for (let colDiff = -2; colDiff <= 2; colDiff++) {
-        // Skip current position
-        if (rowDiff === 0 && colDiff === 0) continue
-        
-        // Add all positions within the 5x5 area
-        addMove(position.row + rowDiff, position.col + colDiff)
+      // Helper function to add valid moves
+      const addMove = (row: number, col: number) => {
+        if (row >= 0 && row < 16 && col >= 0 && col < 10) {
+          validMoves.push({ row, col })
+        }
       }
-    }
-    return validMoves
+
+      // Regular movement rules for other players
+      // Horizontal moves
+      if (moveRule.horizontal > 0) {
+        for (let i = 1; i <= moveRule.horizontal; i++) {
+          // Right
+          addMove(row, col + i)
+          // Left
+          addMove(row, col - i)
+        }
+      }
+
+      // Vertical moves
+      if (moveRule.vertical > 0) {
+        for (let i = 1; i <= moveRule.vertical; i++) {
+          // Up
+          addMove(row - i, col)
+          // Down
+          addMove(row + i, col)
+        }
+      }
+
+      // Diagonal moves
+      if (moveRule.diagonal > 0) {
+        for (let i = 1; i <= moveRule.diagonal; i++) {
+          // Up-right
+          addMove(row - i, col + i)
+          // Up-left
+          addMove(row - i, col - i)
+          // Down-right
+          addMove(row + i, col + i)
+          // Down-left
+          addMove(row + i, col - i)
+        }
+      }
+
+      // Any direction (combines all moves if allowed)
+      if (moveRule.anyDirection) {
+        const maxDistance = Math.max(moveRule.horizontal, moveRule.vertical, moveRule.diagonal)
+        for (let i = 1; i <= maxDistance; i++) {
+          // All 8 directions
+          addMove(row - i, col)     // Up
+          addMove(row + i, col)     // Down
+          addMove(row, col - i)     // Left
+          addMove(row, col + i)     // Right
+          addMove(row - i, col - i) // Up-left
+          addMove(row - i, col + i) // Up-right
+          addMove(row + i, col - i) // Down-left
+          addMove(row + i, col + i) // Down-right
+        }
+      }
+
+      return validMoves
   }
 
-  // Regular movement rules for other players
-  // Horizontal moves
-  if (moveRule.horizontal > 0) {
-    for (let i = 1; i <= moveRule.horizontal; i++) {
-      // Right
-      addMove(position.row, position.col + i)
-      // Left
-      addMove(position.row, position.col - i)
-    }
-  }
-
-  // Vertical moves
-  if (moveRule.vertical > 0) {
-    for (let i = 1; i <= moveRule.vertical; i++) {
-      // Up
-      addMove(position.row - i, position.col)
-      // Down
-      addMove(position.row + i, position.col)
-    }
-  }
-
-  // Diagonal moves
-  if (moveRule.diagonal > 0) {
-    for (let i = 1; i <= moveRule.diagonal; i++) {
-      // Up-right
-      addMove(position.row - i, position.col + i)
-      // Up-left
-      addMove(position.row - i, position.col - i)
-      // Down-right
-      addMove(position.row + i, position.col + i)
-      // Down-left
-      addMove(position.row + i, position.col - i)
-    }
-  }
-
-  // Any direction (combines all moves if allowed)
-  if (moveRule.anyDirection) {
-    const maxDistance = Math.max(moveRule.horizontal, moveRule.vertical, moveRule.diagonal)
-    for (let i = 1; i <= maxDistance; i++) {
-      // All 8 directions
-      addMove(position.row - i, position.col)     // Up
-      addMove(position.row + i, position.col)     // Down
-      addMove(position.row, position.col - i)     // Left
-      addMove(position.row, position.col + i)     // Right
-      addMove(position.row - i, position.col - i) // Up-left
-      addMove(position.row - i, position.col + i) // Up-right
-      addMove(position.row + i, position.col - i) // Down-left
-      addMove(position.row + i, position.col + i) // Down-right
-    }
-  }
-
-  return validMoves
+  return moves
 } 

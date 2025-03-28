@@ -14,8 +14,8 @@
               <div class="player-icon player-blue">F</div>
               <div class="player-info">
                 <h4>Forward (F) - 2 players</h4>
-                <p>Movement: 2 cells in any direction</p>
-                <p>Ball Movement: 4 cells vertically or 2 cells horizontally</p>
+                <p>Movement: 4 cells vertically towards opponent goal, 1 cell vertically towards team goal, or 1 cell horizontally</p>
+                <p>Ball Movement: Same as movement pattern</p>
                 <p>Can only move past midfielders</p>
               </div>
             </div>
