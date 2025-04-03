@@ -21,69 +21,18 @@
                     <h5>Properties</h5>
                     <ul>
                       <li>Can move past midfielders</li>
-                      <li>4 cells forward, 1 cell back</li>
-                      <li>2 cells horizontally</li>
+                      <li>4 cells forward</li>
+                      <li>1 cell back</li>
+                      <li>1 cell horizontally</li>
                     </ul>
                   </div>
                   <div class="movement-section">
                     <h5>Player Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">←</div>
-                      <div class="move">←</div>
-                      <div class="player">F</div>
-                      <div class="move">→</div>
-                      <div class="move">→</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                    </div>
+                    <MovementGrid role="F" />
                   </div>
                   <div class="ball-section">
                     <h5>Ball Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">←</div>
-                      <div class="move">←</div>
-                      <div class="player">F</div>
-                      <div class="move">→</div>
-                      <div class="move">→</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                    </div>
+                    <MovementGrid role="F" :showBallMoves="true" />
                   </div>
                 </div>
               </div>
@@ -104,63 +53,11 @@
                   </div>
                   <div class="movement-section">
                     <h5>Player Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div class="move">↖</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↗</div>
-                      <div></div>
-                      <div class="move">↖</div>
-                      <div></div>
-                      <div class="move">↗</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="player">M</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↙</div>
-                      <div></div>
-                      <div class="move">↘</div>
-                      <div></div>
-                      <div class="move">↙</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↘</div>
-                    </div>
+                    <MovementGrid role="M" />
                   </div>
                   <div class="ball-section">
                     <h5>Ball Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div class="move">↖</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↗</div>
-                      <div></div>
-                      <div class="move">↖</div>
-                      <div></div>
-                      <div class="move">↗</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="player">M</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↙</div>
-                      <div></div>
-                      <div class="move">↘</div>
-                      <div></div>
-                      <div class="move">↙</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↘</div>
-                    </div>
+                    <MovementGrid role="M" :showBallMoves="true" />
                   </div>
                 </div>
               </div>
@@ -182,63 +79,11 @@
                   </div>
                   <div class="movement-section">
                     <h5>Player Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">←</div>
-                      <div class="move">←</div>
-                      <div class="player">D</div>
-                      <div class="move">→</div>
-                      <div class="move">→</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                    </div>
+                    <MovementGrid role="D" />
                   </div>
                   <div class="ball-section">
                     <h5>Ball Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">←</div>
-                      <div class="move">←</div>
-                      <div class="player">D</div>
-                      <div class="move">→</div>
-                      <div class="move">→</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                    </div>
+                    <MovementGrid role="D" :showBallMoves="true" />
                   </div>
                 </div>
               </div>
@@ -260,47 +105,11 @@
                   </div>
                   <div class="movement-section">
                     <h5>Player Movement</h5>
-                    <div class="grid grid-3x3">
-                      <div class="move">↖</div>
-                      <div class="move">↑</div>
-                      <div class="move">↗</div>
-                      <div class="move">←</div>
-                      <div class="player">G</div>
-                      <div class="move">→</div>
-                      <div class="move">↙</div>
-                      <div class="move">↓</div>
-                      <div class="move">↘</div>
-                    </div>
+                    <MovementGrid role="G" />
                   </div>
                   <div class="ball-section">
                     <h5>Ball Movement</h5>
-                    <div class="grid grid-5x5">
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↑</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">←</div>
-                      <div class="move">←</div>
-                      <div class="player">G</div>
-                      <div class="move">→</div>
-                      <div class="move">→</div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div class="move">↓</div>
-                      <div></div>
-                      <div></div>
-                    </div>
+                    <MovementGrid role="G" :showBallMoves="true" />
                   </div>
                 </div>
               </div>
@@ -418,9 +227,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import MovementGrid from './MovementGrid.vue'
 
 export default defineComponent({
   name: 'GameHelp',
+  components: {
+    MovementGrid
+  },
   props: {
     isVisible: {
       type: Boolean,
