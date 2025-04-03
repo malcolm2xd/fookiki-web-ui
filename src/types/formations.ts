@@ -10,6 +10,7 @@ function parsePosition(coord: string): Position {
 export interface Formation {
   name: string
   description: string
+  default: boolean
   positions: {
     G: string[]  // 1 Goalkeeper
     D: string[]  // 4 Defenders
@@ -26,6 +27,7 @@ export const FORMATIONS: Record<string, Formation> = {
   'malformation': {
     name: 'Mal-formation',
     description: 'Custom experimental formation',
+    default:true,
     positions: {
       G: ['1E'],
       D: [

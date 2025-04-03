@@ -67,32 +67,7 @@ export const useGameStore = defineStore('game', {
   state: () => ({
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
-    players: [
-      // Blue Team
-      createPlayer('blue', 'G', '3A', '4-4-2'),
-      createPlayer('blue', 'D', '4A', '4-4-2'),
-      createPlayer('blue', 'D', '4B', '4-4-2'),
-      createPlayer('blue', 'D', '4C', '4-4-2'),
-      createPlayer('blue', 'D', '4D', '4-4-2'),
-      createPlayer('blue', 'M', '6A', '4-4-2'), // Blue captain
-      createPlayer('blue', 'M', '6B', '4-4-2'),
-      createPlayer('blue', 'M', '6C', '4-4-2'),
-      createPlayer('blue', 'M', '6D', '4-4-2'),
-      createPlayer('blue', 'F', '8A', '4-4-2'),
-      createPlayer('blue', 'F', '8B', '4-4-2'),
-      // Red Team
-      createPlayer('red', 'G', '11A', '4-4-2'),
-      createPlayer('red', 'D', '12A', '4-4-2'),
-      createPlayer('red', 'D', '12B', '4-4-2'),
-      createPlayer('red', 'D', '12C', '4-4-2'),
-      createPlayer('red', 'D', '12D', '4-4-2'),
-      createPlayer('red', 'M', '10A', '4-4-2'), // Red captain
-      createPlayer('red', 'M', '10B', '4-4-2'),
-      createPlayer('red', 'M', '10C', '4-4-2'),
-      createPlayer('red', 'M', '10D', '4-4-2'),
-      createPlayer('red', 'F', '14A', '4-4-2'),
-      createPlayer('red', 'F', '14B', '4-4-2'),
-    ] as Player[],
+    players: [] as Player[],
     ballPosition: { row: 8, col: 5 } as Position, // F9 position
     selectedPlayerId: null as string | null,
     isBallSelected: false as boolean,
@@ -100,7 +75,7 @@ export const useGameStore = defineStore('game', {
     gamePhase: 'BALL_MOVEMENT' as 'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER',
     score: { blue: 0, red: 0 },
     winner: null as Team | null,
-    currentFormation: 'malformation' as string,
+    currentFormation: Object.entries(FORMATIONS).find(([_, f]) => f.default)?.[0] || 'malformation' as string,
     isFirstMove: true as boolean,
     blueScore: 0,
     redScore: 0,
