@@ -11,39 +11,298 @@
           <h3>Player Types</h3>
           <div class="player-types">
             <div class="player-type">
-              <div class="player-icon player-blue">F</div>
               <div class="player-info">
-                <h4>Forward (F) - 2 players</h4>
-                <p>Movement: 4 cells vertically towards opponent goal, 1 cell vertically towards team goal, or 1 cell horizontally</p>
-                <p>Ball Movement: Same as movement pattern</p>
-                <p>Can only move past midfielders</p>
+                <div class="player-header">
+                  <div class="player-icon player-blue">F</div>
+                  <h4>Forward (F) - 2 players</h4>
+                </div>
+                <div class="player-details">
+                  <div class="info-section">
+                    <h5>Properties</h5>
+                    <ul>
+                      <li>Can move past midfielders</li>
+                      <li>4 cells forward, 1 cell back</li>
+                      <li>2 cells horizontally</li>
+                    </ul>
+                  </div>
+                  <div class="movement-section">
+                    <h5>Player Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">←</div>
+                      <div class="move">←</div>
+                      <div class="player">F</div>
+                      <div class="move">→</div>
+                      <div class="move">→</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                  <div class="ball-section">
+                    <h5>Ball Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">←</div>
+                      <div class="move">←</div>
+                      <div class="player">F</div>
+                      <div class="move">→</div>
+                      <div class="move">→</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="player-type">
-              <div class="player-icon player-blue">M</div>
               <div class="player-info">
-                <h4>Midfielder (M) - 4 players</h4>
-                <p>Movement: 2 cells diagonally</p>
-                <p>Ball Movement: 2 cells diagonally</p>
-                <p>Can move past any opponent</p>
+                <div class="player-header">
+                  <div class="player-icon player-blue">M</div>
+                  <h4>Midfielder (M) - 4 players</h4>
+                </div>
+                <div class="player-details">
+                  <div class="info-section">
+                    <h5>Properties</h5>
+                    <ul>
+                      <li>Can move past any opponent</li>
+                      <li>2 cells diagonally</li>
+                    </ul>
+                  </div>
+                  <div class="movement-section">
+                    <h5>Player Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div class="move">↖</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↗</div>
+                      <div></div>
+                      <div class="move">↖</div>
+                      <div></div>
+                      <div class="move">↗</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="player">M</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↙</div>
+                      <div></div>
+                      <div class="move">↘</div>
+                      <div></div>
+                      <div class="move">↙</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↘</div>
+                    </div>
+                  </div>
+                  <div class="ball-section">
+                    <h5>Ball Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div class="move">↖</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↗</div>
+                      <div></div>
+                      <div class="move">↖</div>
+                      <div></div>
+                      <div class="move">↗</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="player">M</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↙</div>
+                      <div></div>
+                      <div class="move">↘</div>
+                      <div></div>
+                      <div class="move">↙</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↘</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="player-type">
-              <div class="player-icon player-blue">D</div>
               <div class="player-info">
-                <h4>Defender (D) - 4 players</h4>
-                <p>Movement: 2 cells horizontally or 1 cell vertically</p>
-                <p>Ball Movement: 2 cells vertically or horizontally</p>
-                <p>Can move past defenders and midfielders only</p>
+                <div class="player-header">
+                  <div class="player-icon player-blue">D</div>
+                  <h4>Defender (D) - 4 players</h4>
+                </div>
+                <div class="player-details">
+                  <div class="info-section">
+                    <h5>Properties</h5>
+                    <ul>
+                      <li>Can move past defenders and midfielders</li>
+                      <li>2 cells horizontally</li>
+                      <li>1 cell vertically</li>
+                    </ul>
+                  </div>
+                  <div class="movement-section">
+                    <h5>Player Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">←</div>
+                      <div class="move">←</div>
+                      <div class="player">D</div>
+                      <div class="move">→</div>
+                      <div class="move">→</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                  <div class="ball-section">
+                    <h5>Ball Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">←</div>
+                      <div class="move">←</div>
+                      <div class="player">D</div>
+                      <div class="move">→</div>
+                      <div class="move">→</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="player-type">
-              <div class="player-icon player-blue">G</div>
               <div class="player-info">
-                <h4>Goalkeeper (G) - 1 player</h4>
-                <p>Movement: 1 cell in any direction</p>
-                <p>Ball Movement: 3 cells in any straight direction</p>
-                <p>Cannot move past any opponent</p>
+                <div class="player-header">
+                  <div class="player-icon player-blue">G</div>
+                  <h4>Goalkeeper (G) - 1 player</h4>
+                </div>
+                <div class="player-details">
+                  <div class="info-section">
+                    <h5>Properties</h5>
+                    <ul>
+                      <li>Cannot move past any opponent</li>
+                      <li>1 cell in any direction</li>
+                      <li>3 cells straight for ball movement</li>
+                    </ul>
+                  </div>
+                  <div class="movement-section">
+                    <h5>Player Movement</h5>
+                    <div class="grid grid-3x3">
+                      <div class="move">↖</div>
+                      <div class="move">↑</div>
+                      <div class="move">↗</div>
+                      <div class="move">←</div>
+                      <div class="player">G</div>
+                      <div class="move">→</div>
+                      <div class="move">↙</div>
+                      <div class="move">↓</div>
+                      <div class="move">↘</div>
+                    </div>
+                  </div>
+                  <div class="ball-section">
+                    <h5>Ball Movement</h5>
+                    <div class="grid grid-5x5">
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↑</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">←</div>
+                      <div class="move">←</div>
+                      <div class="player">G</div>
+                      <div class="move">→</div>
+                      <div class="move">→</div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div class="move">↓</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -252,20 +511,39 @@ export default defineComponent({
 }
 
 .player-types {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-top: 1rem;
 }
 
 .player-type {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
   background-color: white;
-  padding: 1rem;
-  border-radius: 4px;
+  padding: 1.25rem;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.player-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.info-section h5,
+.movement-section h5,
+.ball-section h5 {
+  margin: 0 0 0.75rem 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .player-icon {
@@ -281,15 +559,21 @@ export default defineComponent({
   flex-shrink: 0;
 }
 
-.player-info h4 {
-  margin: 0 0 0.5rem 0;
+.player-header h4 {
+  margin: 0;
   color: #2c3e50;
 }
 
-.player-info p {
-  margin: 0.25rem 0;
+.player-info ul {
+  margin: 0;
+  padding-left: 1.25rem;
   color: #666;
   font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.player-info li {
+  margin: 0.25rem 0;
 }
 
 ul, ol {
@@ -322,6 +606,57 @@ li {
 
 .interaction-matrix tr:nth-child(even) {
   background-color: #f9f9f9;
+}
+
+.movement-grids {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.movement-grid h4 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.grid {
+  display: grid;
+  gap: 2px;
+  margin: 1rem 0;
+}
+
+.grid-3x3 {
+  grid-template-columns: repeat(3, 1fr);
+  width: 90px;
+}
+
+.grid-5x5 {
+  grid-template-columns: repeat(5, 1fr);
+  width: 150px;
+}
+
+.grid div {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 1rem;
+}
+
+.grid .player {
+  background-color: #4299e1;
+  color: white;
+  font-weight: bold;
+}
+
+.grid .move {
+  background-color: #9ae6b4;
+  color: #2f855a;
 }
 
 @media (max-width: 768px) {
