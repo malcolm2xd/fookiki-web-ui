@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import type { Position } from '@/stores/game'
+import type { Position } from '@/types/player'
 
 export default defineComponent({
   name: 'Ball',
