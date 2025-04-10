@@ -1,7 +1,6 @@
 <template>
   <div class="game-container">
     <div class="game-controls">
-      <FormationSelector class="formation-selector" />
       <GameState class="game-state" />
       <button class="help-button" @click="showHelp = true">
         <span class="help-icon">?</span>
@@ -117,7 +116,6 @@
 import { defineComponent, computed, ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import type { Position } from '@/types/player'
-import FormationSelector from './FormationSelector.vue'
 import GameState from './GameState.vue'
 import GameHelp from './GameHelp.vue'
 import CelebrationModal from './CelebrationModal.vue'
@@ -125,7 +123,6 @@ import CelebrationModal from './CelebrationModal.vue'
 export default defineComponent({
   name: 'GameBoard',
   components: {
-    FormationSelector,
     GameState,
     GameHelp,
     CelebrationModal

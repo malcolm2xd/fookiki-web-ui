@@ -65,6 +65,12 @@ function createPlayer(team: Team, role: PlayerRole, positionStr: string, formati
 
 export const useGameStore = defineStore('game', {
   state: () => ({
+    gameConfig: {
+      mode: 'timed', // 'timed', 'race', 'gap', 'infinite'
+      duration: 300, // 5 minutes default
+      goalTarget: 5, // for race mode
+      goalGap: 2, // for gap mode
+    },
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
     players: [] as Player[],
@@ -651,8 +657,7 @@ export const useGameStore = defineStore('game', {
                 this.showCelebration('red', `GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'blue'; // After red scores, blue gets the ball
                 this.resetPositions();
-                this.resetTurnTimer(); // Reset turn timer for the new team
-                this.startTurnTimer(); // Start the turn timer for the new team's ball move
+                this.resetTurnTimer() // Reset turn timer for the new team
               } else if (position.row === 16) {
                 this.score.blue++;
                 this.blueScore++;
@@ -664,8 +669,7 @@ export const useGameStore = defineStore('game', {
                 this.showCelebration('blue', `GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'red'; // After blue scores, red gets the ball
                 this.resetPositions();
-                this.resetTurnTimer(); // Reset turn timer for the new team
-                this.startTurnTimer(); // Start the turn timer for the new team's ball move
+                this.resetTurnTimer() // Reset turn timer for the new team
               }
             } else {
               // Check for captain's special ability
@@ -880,9 +884,12 @@ export const useGameStore = defineStore('game', {
       this.celebration.show = false;
       this.celebration.team = null;
       this.celebration.message = '';
-      // Restart the game timer when the modal is dismissed
+      
+      // Restart timers after celebration
       this.startGameTimer();
-      // The turn timer will be started by the goal scoring logic
+      if (this.timerConfig.enabled) {
+        this.startTurnTimer(); // Start turn timer for the next player
+      }
     },
 
     checkGoal() {

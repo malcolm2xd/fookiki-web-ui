@@ -1,25 +1,36 @@
 <template>
   <div class="app">
-    <GameBoard />
+    <GameConfig v-if="!gameStarted" />
+    <GameBoard v-else />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue'
+import { defineComponent, ref } from 'vue'
 import { useGameStore } from '@/stores/game'
 import GameBoard from '@/components/GameBoard.vue'
+import GameConfig from '@/components/GameConfig.vue'
 
 export default defineComponent({
   name: 'App',
   components: {
-    GameBoard
+    GameBoard,
+    GameConfig
   },
   setup() {
     const store = useGameStore()
-    
-    onMounted(() => {
-      store.initializeGame()
+    const gameStarted = ref(false)
+
+    // Watch for game initialization
+    store.$subscribe((_, state) => {
+      if (state.players.length > 0) {
+        gameStarted.value = true
+      }
     })
+
+    return {
+      gameStarted
+    }
   }
 })
 </script>

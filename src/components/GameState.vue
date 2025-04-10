@@ -14,9 +14,7 @@
         <div class="score">{{ redScore }}</div>
       </div>
     </div>
-    <button class="timer-toggle" @click="store.toggleTurnTimer()">
-      {{ store.timerConfig.enabled ? 'Disable Timer' : 'Enable Timer' }}
-    </button>
+
   </div>
 </template>
 
@@ -120,22 +118,6 @@ export default defineComponent({
 
 .state-box.red {
   background-color: #D32F2F;
-}
-
-.timer-toggle {
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
-}
-
-.timer-toggle:hover {
-  background-color: #45a049;
 }
 
 .game-timer {
