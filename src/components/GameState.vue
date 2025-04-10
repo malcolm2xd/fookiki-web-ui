@@ -14,7 +14,7 @@
         <div class="score">{{ redScore }}</div>
       </div>
     </div>
-    <button class="timer-toggle" @click="store.toggleTimer()">
+    <button class="timer-toggle" @click="store.toggleTurnTimer()">
       {{ store.timerConfig.enabled ? 'Disable Timer' : 'Enable Timer' }}
     </button>
   </div>

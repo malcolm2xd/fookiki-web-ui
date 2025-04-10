@@ -87,7 +87,7 @@ export const useGameStore = defineStore('game', {
     timerConfig: {
       duration: 10, // seconds per move
       warningThreshold: 3, // seconds
-      enabled: true,
+      enabled: false,
       gameDuration: 300, // 5 minutes in seconds
       extraTimeDuration: 300, // 5 minutes in seconds
       extraTimeTurnDuration: 10, // 10 seconds per move in extra time
@@ -151,7 +151,7 @@ export const useGameStore = defineStore('game', {
 
       // Clean up any existing timers first
       this.stopGameTimer()
-      this.stopTimer()
+      this.stopTurnTimer()
       
       // Reset timer states
       this.timerState = {
@@ -265,7 +265,7 @@ export const useGameStore = defineStore('game', {
       this.gameTimerState.timeLeft = this.timerConfig.gameDuration
       this.startGameTimer()
       if (this.timerConfig.enabled) {
-        this.startTimer()
+        this.startTurnTimer()
       }
     },
 
@@ -305,7 +305,7 @@ export const useGameStore = defineStore('game', {
     },
 
     endTurn() {
-      this.stopTimer()
+      this.stopTurnTimer()
       // Always switch teams after a move, regardless of captain's special ability
       this.currentTeam = this.currentTeam === 'blue' ? 'red' : 'blue'
       this.selectedPlayerId = null
@@ -313,7 +313,7 @@ export const useGameStore = defineStore('game', {
       this.isBallSelected = false
       this.gamePhase = 'PLAYER_SELECTION'
       this.canCaptainMoveAgain = false
-      this.startTimer() // Start timer for next player
+      this.startTurnTimer() // Start timer for next player
     },
 
     checkWinner() {
@@ -647,12 +647,12 @@ export const useGameStore = defineStore('game', {
                 this.ballPosition = position;
                 // Stop timers before celebration
                 this.stopGameTimer();
-                this.stopTimer();
+                this.stopTurnTimer();
                 this.showCelebration('red', `GOAL! Red team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'blue'; // After red scores, blue gets the ball
                 this.resetPositions();
-                this.resetTimer(); // Reset turn timer for the new team
-                this.startTimer(); // Start the turn timer for the new team's ball move
+                this.resetTurnTimer(); // Reset turn timer for the new team
+                this.startTurnTimer(); // Start the turn timer for the new team's ball move
               } else if (position.row === 16) {
                 this.score.blue++;
                 this.blueScore++;
@@ -660,12 +660,12 @@ export const useGameStore = defineStore('game', {
                 this.ballPosition = position;
                 // Stop timers before celebration
                 this.stopGameTimer();
-                this.stopTimer();
+                this.stopTurnTimer();
                 this.showCelebration('blue', `GOAL! Blue team scores! Score: Blue ${this.score.blue} - ${this.score.red} Red`);
                 this.currentTeam = 'red'; // After blue scores, red gets the ball
                 this.resetPositions();
-                this.resetTimer(); // Reset turn timer for the new team
-                this.startTimer(); // Start the turn timer for the new team's ball move
+                this.resetTurnTimer(); // Reset turn timer for the new team
+                this.startTurnTimer(); // Start the turn timer for the new team's ball move
               }
             } else {
               // Check for captain's special ability
@@ -693,8 +693,8 @@ export const useGameStore = defineStore('game', {
                 this.canCaptainMoveAgain = true; // Mark that captain has used their special ability
                 
                 // Reset turn timer for the receiving player
-                this.resetTimer();
-                this.startTimer();
+                this.resetTurnTimer();
+                this.startTurnTimer();
                 return;
               }
 
@@ -748,9 +748,11 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    startTimer() {
+    startTurnTimer() {
       if (!this.timerConfig.enabled) return
-      
+      if (this.timerState.timerId) {
+        clearInterval(this.timerState.timerId);
+      }
       this.timerState.timeLeft = this.timerConfig.duration
       this.timerState.isRunning = true
       this.timerState.timerId = window.setInterval(() => {
@@ -760,11 +762,10 @@ export const useGameStore = defineStore('game', {
           this.endTurn()
         }
       }, 1000)
+      console.log('Starting timer with ID:', this.timerState.timerId)
     },
 
-    stopTimer() {
-      if (!this.timerConfig.enabled) return
-      
+    stopTurnTimer() {     
       if (this.timerState.timerId) {
         clearInterval(this.timerState.timerId)
         this.timerState.timerId = null
@@ -772,10 +773,10 @@ export const useGameStore = defineStore('game', {
       this.timerState.isRunning = false
     },
 
-    resetTimer() {
+    resetTurnTimer() {
       if (!this.timerConfig.enabled) return;
       
-      this.stopTimer();
+      this.stopTurnTimer();
       this.timerConfig.remainingTime = this.timerConfig.duration;
       this.timerConfig.progress = 100;
       this.timerConfig.isRunning = false;
@@ -785,12 +786,12 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    toggleTimer() {
+    toggleTurnTimer() {
       this.timerConfig.enabled = !this.timerConfig.enabled
       if (this.timerConfig.enabled) {
-        this.startTimer()
+        this.startTurnTimer()
       } else {
-        this.stopTimer()
+        this.stopTurnTimer()
       }
     },
 
@@ -817,7 +818,7 @@ export const useGameStore = defineStore('game', {
     endGame() {
       // Clean up timers first
       this.stopGameTimer()
-      this.stopTimer()
+      this.stopTurnTimer()
       
       // Check if scores are tied and we're not already in extra time
       if (this.score.blue === this.score.red && !this.gameTimerState.isExtraTime) {
@@ -839,7 +840,7 @@ export const useGameStore = defineStore('game', {
         this.timerConfig.duration = this.timerConfig.extraTimeTurnDuration
         this.startGameTimer()
         if (this.timerConfig.enabled) {
-          this.startTimer()
+          this.startTurnTimer()
         }
         alert('Scores are tied! Starting extra time (2 minutes) with 4-second turns!')
         return
@@ -867,7 +868,7 @@ export const useGameStore = defineStore('game', {
     showCelebration(team: Team, message: string) {
       // Stop both timers before showing the modal
       this.stopGameTimer();
-      this.stopTimer();
+      this.stopTurnTimer();
       this.celebration = {
         show: true,
         team,
