@@ -66,6 +66,7 @@ function createPlayer(team: Team, role: PlayerRole, positionStr: string, formati
 export const useGameStore = defineStore('game', {
   state: () => ({
     gameConfig: {
+      opponent: 'local' as 'local' | 'ai' | 'online',
       mode: 'timed', // 'timed', 'race', 'gap', 'infinite'
       duration: 300, // 5 minutes default
       goalTarget: 5, // for race mode

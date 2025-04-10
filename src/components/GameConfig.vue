@@ -2,6 +2,46 @@
 <template>
   <div class="game-config">
     <h1 class="title">Fookiki Game Setup</h1>
+
+    <!-- Opponent Selection -->
+    <div class="config-section opponent-section">
+      <h2>Select Opponent</h2>
+      <div class="opponent-selector">
+        <button 
+          class="opponent-button"
+          @click="selectOpponent('local')"
+          :class="{ active: selectedOpponent === 'local' }"
+        >
+          <div class="opponent-icon">👥</div>
+          <div class="opponent-info">
+            <h3>Same Screen</h3>
+            <p>Play against a friend on this device</p>
+          </div>
+        </button>
+        <button 
+          class="opponent-button disabled"
+          disabled
+          title="Coming soon!"
+        >
+          <div class="opponent-icon">🤖</div>
+          <div class="opponent-info">
+            <h3>Computer</h3>
+            <p>Play against AI (Coming soon)</p>
+          </div>
+        </button>
+        <button 
+          class="opponent-button disabled"
+          disabled
+          title="Coming soon!"
+        >
+          <div class="opponent-icon">🌐</div>
+          <div class="opponent-info">
+            <h3>Online</h3>
+            <p>Play against others online (Coming soon)</p>
+          </div>
+        </button>
+      </div>
+    </div>
     
     <div class="main-config">
       <!-- Game Modes Panel -->
@@ -156,6 +196,7 @@ import { useGameStore } from '@/stores/game'
 import FormationSelector from './FormationSelector.vue'
 
 const gameStore = useGameStore()
+const selectedOpponent = ref('local')
 const selectedMode = ref('timed')
 const selectedDuration = ref(300) // 5 minutes default
 const selectedGoalCount = ref(5) // for race mode
@@ -176,6 +217,10 @@ const gameDurations = [180, 300, 600] // 3, 5, 10 minutes
 const goalCounts = [3, 5, 7, 10] // for race mode
 const goalGaps = [2, 3, 4, 5] // for gap mode
 const turnDurations = [5, 10, 15, 20]
+
+function selectOpponent(type: 'local' | 'ai' | 'online') {
+  selectedOpponent.value = type
+}
 
 function selectMode(mode: string) {
   if (modeEnabled[mode as keyof typeof modeEnabled]) {
@@ -206,7 +251,8 @@ function updateTurnTimer() {
 }
 
 function startGame() {
-  // Update game configuration based on mode
+  // Update game configuration
+  gameStore.gameConfig.opponent = selectedOpponent.value
   gameStore.gameConfig.mode = selectedMode.value
   switch (selectedMode.value) {
     case 'timed':
@@ -231,6 +277,65 @@ function startGame() {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.opponent-section {
+  margin-bottom: 2rem;
+}
+
+.opponent-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.opponent-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.opponent-button:hover:not(.disabled) {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.opponent-button.active {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.opponent-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f8f9fa;
+}
+
+.opponent-icon {
+  font-size: 2rem;
+  min-width: 3rem;
+  text-align: center;
+}
+
+.opponent-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.opponent-info p {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .title {
