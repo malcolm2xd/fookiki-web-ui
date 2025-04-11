@@ -70,57 +70,6 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = false;
   });
 
-  // Sign up with email/password
-  async function signUp(email: string, password: string, displayName: string) {
-    try {
-      error.value = null;
-      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Create user profile
-      const newProfile: UserProfile = {
-        uid: newUser.uid,
-        displayName,
-        email,
-        stats: {
-          gamesPlayed: 0,
-          wins: 0,
-          losses: 0,
-          draws: 0,
-          goalsScored: 0
-        }
-      };
-      
-      await setDoc(doc(firestore, 'users', newUser.uid), newProfile);
-      profile.value = newProfile;
-    } catch (e) {
-      error.value = (e as Error).message;
-      throw e;
-    }
-  }
-
-  // Sign in with email/password
-  async function signIn(email: string, password: string) {
-    try {
-      error.value = null;
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (e) {
-      error.value = (e as Error).message;
-      throw e;
-    }
-  }
-
-  // Sign in with Google
-  async function signInWithGoogle() {
-    try {
-      error.value = null;
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (e) {
-      error.value = (e as Error).message;
-      throw e;
-    }
-  }
-
   // Sign out
   async function logOut() {
     try {
