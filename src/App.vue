@@ -1,35 +1,25 @@
 <template>
   <div class="app">
-    <GameConfig v-if="!gameStarted" />
-    <GameBoard v-else />
+    <div v-if="authStore.loading" class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading...</p>
+    </div>
+    <router-view v-else></router-view>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import { useGameStore } from '@/stores/game'
-import GameBoard from '@/components/GameBoard.vue'
-import GameConfig from '@/components/GameConfig.vue'
+import { defineComponent } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 export default defineComponent({
   name: 'App',
-  components: {
-    GameBoard,
-    GameConfig
-  },
-  setup() {
-    const store = useGameStore()
-    const gameStarted = ref(false)
 
-    // Watch for game initialization
-    store.$subscribe((_, state) => {
-      if (state.players.length > 0) {
-        gameStarted.value = true
-      }
-    })
+  setup() {
+    const authStore = useAuthStore()
 
     return {
-      gameStarted
+      authStore
     }
   }
 })
@@ -40,12 +30,29 @@ export default defineComponent({
   min-height: 100vh;
   padding: 2rem;
   background-color: #f5f5f5;
+  color: rgb(53, 56, 85));
 }
 
-h1 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2.5rem;
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #333;
+  border-top: 5px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

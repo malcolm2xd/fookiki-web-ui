@@ -1,6 +1,17 @@
 <!-- Game configuration landing page -->
 <template>
   <div class="game-config">
+    <!-- User Header -->
+    <div class="user-header">
+      <div class="user-info" v-if="authStore.user">
+        <h2>Welcome, {{ displayName }}</h2>
+        <p>{{ phoneNumber }}</p>
+      </div>
+      <button @click="logOut" class="logout-btn" title="Log Out">
+        <span class="logout-icon">🚪</span>
+      </button>
+    </div>
+
     <h1 class="title">Fookiki Game Setup</h1>
 
     <!-- Opponent Selection -->
@@ -191,12 +202,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { useAuthStore } from '@/stores/auth'
 import FormationSelector from './FormationSelector.vue'
 
+const router = useRouter()
+const authStore = useAuthStore()
+
 const gameStore = useGameStore()
-const selectedOpponent = ref('local')
+type OpponentType = 'local' | 'ai' | 'online'
+const selectedOpponent = ref<OpponentType>('local')
+const displayName = ref('Player')
+const phoneNumber = ref('')
+
+onMounted(async () => {
+  if (authStore.user) {
+    displayName.value = authStore.user.phoneNumber || 'Player'
+    phoneNumber.value = authStore.user.phoneNumber || 'Not provided'
+  }
+})
+
+async function logOut() {
+  await authStore.logOut()
+  router.push('/login')
+}
 const selectedMode = ref('timed')
 const selectedDuration = ref(300) // 5 minutes default
 const selectedGoalCount = ref(5) // for race mode
@@ -251,6 +282,7 @@ function updateTurnTimer() {
 }
 
 function startGame() {
+  console.log('Starting game...')
   // Update game configuration
   gameStore.gameConfig.opponent = selectedOpponent.value
   gameStore.gameConfig.mode = selectedMode.value
@@ -269,10 +301,53 @@ function startGame() {
   
   // Initialize and start the game
   gameStore.initializeGame()
+  router.push('/game')
 }
 </script>
 
 <style scoped>
+.user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-info h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.user-info p {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 1.5rem;
+  transition: color 0.2s;
+}
+
+.logout-btn:hover {
+  color: #2c3e50;
+}
+
 .game-config {
   max-width: 1200px;
   margin: 0 auto;

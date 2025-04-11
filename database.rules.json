@@ -1,0 +1,34 @@
+{
+  "rules": {
+    "games": {
+      "$gameId": {
+        ".read": "auth != null",
+        ".write": "auth != null && 
+          (!data.exists() || 
+           data.child('players').child('blue').child('uid').val() === auth.uid || 
+           data.child('players').child('red').child('uid').val() === auth.uid)",
+        "players": {
+          ".validate": "newData.hasChildren(['blue', 'red'])"
+        },
+        "gameState": {
+          ".validate": "newData.hasChildren(['currentTeam', 'players', 'ballPosition', 'score'])"
+        }
+      }
+    },
+    "gameRooms": {
+      ".read": "auth != null",
+      "$roomId": {
+        ".write": "auth != null && 
+          (!data.exists() || 
+           !data.child('players').child('blue').exists() || 
+           !data.child('players').child('red').exists() || 
+           data.child('players').child('blue').child('uid').val() === auth.uid || 
+           data.child('players').child('red').child('uid').val() === auth.uid)"
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

@@ -15,7 +15,9 @@
   "dependencies": {
     "pinia": "^2.1.7",
     "tone": "^14.7.77",
-    "vue": "^3.4.15"
+    "vue": "^3.4.15",
+    "firebase": "^10.8.0",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.16",
