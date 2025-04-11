@@ -30,7 +30,7 @@ export default defineComponent({
   min-height: 100vh;
   padding: 2rem;
   background-color: #f5f5f5;
-  color: rgb(53, 56, 85));
+  color: rgb(53, 56, 85);
 }
 
 .loading {
