@@ -41,14 +41,14 @@
           </div>
         </button>
         <button 
-          class="opponent-button disabled"
-          disabled
-          title="Coming soon!"
+          class="opponent-button"
+          @click="selectOpponent('online')"
+          :class="{ active: selectedOpponent === 'online' }"
         >
           <div class="opponent-icon">🌐</div>
           <div class="opponent-info">
             <h3>Online</h3>
-            <p>Play against others online (Coming soon)</p>
+            <p>Play against others online</p>
           </div>
         </button>
       </div>
@@ -206,12 +206,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
+import { useGameRoomStore } from '@/stores/gameRoom'
+import type { GameMode } from '@/types/game'
 import FormationSelector from './FormationSelector.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const gameStore = useGameStore()
+const gameRoomStore = useGameRoomStore()
 type OpponentType = 'local' | 'ai' | 'online'
 const selectedOpponent = ref<OpponentType>('local')
 const displayName = ref('Player')
@@ -228,7 +231,7 @@ async function logOut() {
   await authStore.logOut()
   router.push('/login')
 }
-const selectedMode = ref('timed')
+const selectedMode = ref<GameMode>('timed')
 const selectedDuration = ref(300) // 5 minutes default
 const selectedGoalCount = ref(5) // for race mode
 const selectedGap = ref(2) // for gap mode
@@ -253,8 +256,8 @@ function selectOpponent(type: 'local' | 'ai' | 'online') {
   selectedOpponent.value = type
 }
 
-function selectMode(mode: string) {
-  if (modeEnabled[mode as keyof typeof modeEnabled]) {
+function selectMode(mode: GameMode) {
+  if (modeEnabled[mode]) {
     selectedMode.value = mode
   }
 }
@@ -281,27 +284,48 @@ function updateTurnTimer() {
   gameStore.timerConfig.duration = turnDuration.value
 }
 
-function startGame() {
+async function startGame() {
   console.log('Starting game...')
-  // Update game configuration
-  gameStore.gameConfig.opponent = selectedOpponent.value
-  gameStore.gameConfig.mode = selectedMode.value
-  switch (selectedMode.value) {
-    case 'timed':
-      gameStore.gameConfig.duration = selectedDuration.value
-      gameStore.timerConfig.gameDuration = selectedDuration.value
-      break
-    case 'race':
-      gameStore.gameConfig.goalTarget = selectedGoalCount.value
-      break
-    case 'gap':
-      gameStore.gameConfig.goalGap = selectedGap.value
-      break
-  }
   
-  // Initialize and start the game
-  gameStore.initializeGame()
-  router.push('/game')
+  if (selectedOpponent.value === 'online') {
+    try {
+      // Start matchmaking
+      // Only timed and race modes are supported for online play
+      if (selectedMode.value !== 'timed' && selectedMode.value !== 'race') {
+        throw new Error('Only timed and race modes are supported for online play')
+      }
+      
+      await gameRoomStore.findMatch({
+        mode: selectedMode.value,
+        duration: selectedMode.value === 'timed' ? selectedDuration.value : undefined,
+        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : undefined
+      } as { mode: 'timed' | 'race', duration?: number, goalTarget?: number })
+      router.push('/room')
+    } catch (error) {
+      console.error('Failed to find match:', error)
+    }
+  } else {
+    // Local game
+    gameStore.gameConfig.opponent = selectedOpponent.value
+    gameStore.gameConfig.mode = selectedMode.value
+
+    switch (selectedMode.value) {
+      case 'timed':
+        gameStore.gameConfig.duration = selectedDuration.value
+        gameStore.timerConfig.gameDuration = selectedDuration.value
+        break
+      case 'race':
+        gameStore.gameConfig.goalTarget = selectedGoalCount.value
+        break
+      case 'gap':
+        gameStore.gameConfig.goalGap = selectedGap.value
+        break
+    }
+    
+    // Initialize and start the game
+    gameStore.initializeGame()
+    router.push('/game')
+  }
 }
 </script>
 

@@ -6,6 +6,7 @@ import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
 const LoginView = () => import('@/components/LoginView.vue');
 const GameBoard = () => import('@/components/GameBoard.vue');
 const GameConfig = () => import('@/components/GameConfig.vue');
+const GameRoom = () => import('@/components/GameRoom.vue');
 
 // Auth guard - only allow authenticated users
 function requireAuth(
@@ -56,6 +57,12 @@ const router = createRouter({
       path: '/lobby',
       name: 'lobby',
       component: GameConfig,
+      beforeEnter: requireAuth
+    },
+    {
+      path: '/room',
+      name: 'room',
+      component: GameRoom,
       beforeEnter: requireAuth
     },
     {
