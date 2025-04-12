@@ -52,18 +52,28 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         delete request.preferences.goalTarget
       }
 
+      // Create a new request in the matchmaking queue
       const queueRef = dbRef(db, 'matchmaking')
-      await push(queueRef, request)
+      const newRequestRef = await push(queueRef, request)
 
       // Listen for match
       const matchRef = dbRef(db, `matches/${auth.currentUser.uid}`)
-      onValue(matchRef, async (snapshot) => {
+      const unsubscribe = onValue(matchRef, async (snapshot) => {
         const match = snapshot.val()
         if (match?.roomId) {
-          await joinRoom(match.roomId)
-          // Clear the match
+          // Found a match, clean up
+          unsubscribe()
           await update(matchRef, {})
+          await update(newRequestRef, {})
+          await joinRoom(match.roomId)
         }
+      })
+
+      // Clean up if component is unmounted
+      window.addEventListener('beforeunload', async () => {
+        unsubscribe()
+        await update(newRequestRef, {})
+        await update(matchRef, {})
       })
     } catch (e) {
       error.value = (e as Error).message
