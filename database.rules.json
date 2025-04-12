@@ -2,16 +2,14 @@
   "rules": {
     "matchmaking": {
       ".read": "auth != null",
-      ".write": "auth != null",
+      ".write": true,
       "$requestId": {
         ".validate": "newData.hasChildren(['uid', 'phoneNumber', 'timestamp', 'preferences'])"
       }
     },
     "matches": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null"
-      }
+      ".read": "auth != null",
+      ".write": true
     },
     "gameRooms": {
       ".read": "auth != null",

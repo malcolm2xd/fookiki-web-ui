@@ -55,6 +55,7 @@ export const FORMATIONS: Record<string, Formation> = {
   '4-4-2-diamond': {
     name: '4-4-2 Diamond',
     description: 'Classic formation with diamond midfield',
+    default: false,
     positions: {
       G: ['1E'],
       D: [
@@ -82,6 +83,7 @@ export const FORMATIONS: Record<string, Formation> = {
   '4-4-2-flat': {
     name: '4-4-2 Flat',
     description: 'Traditional formation with flat midfield line',
+    default: false,
     positions: {
       G: ['1E'],
       D: [
@@ -109,6 +111,7 @@ export const FORMATIONS: Record<string, Formation> = {
   '4-1-3-2': {
     name: '4-1-3-2',
     description: 'Balanced formation with holding midfielder',
+    default: false,
     positions: {
       G: ['1E'],
       D: [
@@ -136,6 +139,7 @@ export const FORMATIONS: Record<string, Formation> = {
   '4-2-2-2': {
     name: '4-2-2-2',
     description: 'Box formation with double pivot',
+    default: false,
     positions: {
       G: ['1E'],
       D: [
