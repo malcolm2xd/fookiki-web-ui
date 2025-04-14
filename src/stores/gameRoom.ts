@@ -1,36 +1,108 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { auth, firestore, db } from '@/config/firebase'
-import { ref as dbRef, push, onValue, update, serverTimestamp } from 'firebase/database'
-import { doc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore'
+import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
+import { doc, setDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore'
+import { useRouter } from 'vue-router'
 import type { GameRoom, MatchRequest } from '@/types/game'
+import { FORMATIONS } from '@/types/formations'
+import { initializeGameState } from '@/utils/gameInitializer'
 
 export const useGameRoomStore = defineStore('gameRoom', () => {
+  // Initialize router
+  const router = useRouter()
+
   // State
   const currentRoom = ref<GameRoom | null>(null)
   const matchmakingStatus = ref<'idle' | 'searching' | 'joining'>('idle')
   const error = ref<string | null>(null)
 
+  // Utility function to parse board
+  function parseBoard(board: number[][] | string): number[][] {
+    if (Array.isArray(board)) return board
+    try {
+      return JSON.parse(board as string)
+    } catch {
+      // Return empty board if parsing fails
+      return Array(8).fill(null).map(() => Array(8).fill(null))
+    }
+  }
+
+  // Convert string coordinate (e.g., '3B') to [row, col]
+  function parseCoordinate(coord: string): [number, number] {
+    const row = parseInt(coord.charAt(0)) - 1
+    const col = coord.charAt(1).charCodeAt(0) - 65
+    return [row, col]
+  }
+
+  // Utility function to find default formation
+  function getDefaultFormation(): typeof FORMATIONS[keyof typeof FORMATIONS] {
+    // Validate FORMATIONS import
+    if (!FORMATIONS || typeof FORMATIONS !== 'object') {
+      console.error('❌ FORMATIONS is not a valid object:', FORMATIONS)
+      throw new Error('FORMATIONS is not properly imported')
+    }
+
+    // Log available formations for debugging
+    const formationKeys = Object.keys(FORMATIONS)
+    console.error('🔍 Available Formations:', formationKeys)
+
+    // Find default formation
+    const defaultFormations = Object.values(FORMATIONS).filter(formation => formation.default)
+    
+    // Handle default formation selection
+    if (defaultFormations.length === 0) {
+      console.error('❌ No default formation found. Available formations:', formationKeys)
+      
+      // Fallback: return the first formation if no default is found
+      if (formationKeys.length > 0) {
+        console.warn('⚠️ Using first available formation as default')
+        return FORMATIONS[formationKeys[0]]
+      }
+      
+      throw new Error('No formations available')
+    }
+
+    if (defaultFormations.length > 1) {
+      console.warn('⚠️ Multiple default formations found. Using the first one.')
+    }
+
+    return defaultFormations[0]
+  }
+
+  // Utility function to create initial game board
+  function createInitialGameBoard(formation: typeof FORMATIONS[keyof typeof FORMATIONS]): number[][] {
+    const gameState = initializeGameState(formation.name)
+    return gameState.board
+  }
+
   // Getters
   const isInRoom = computed(() => currentRoom.value !== null)
   const isMyTurn = computed(() => {
-    if (!currentRoom.value || !auth.currentUser) return false
+    if (!currentRoom.value?.gameState || !auth.currentUser) return false
     return currentRoom.value.gameState.currentTurn === auth.currentUser.uid
   })
   const myScore = computed(() => {
     if (!currentRoom.value || !auth.currentUser) return 0
     return currentRoom.value.players[auth.currentUser.uid]?.score || 0
   })
+  const boardState = computed(() => {
+    if (!currentRoom.value?.gameState) return Array(8).fill(null).map(() => Array(8).fill(null))
+    return parseBoard(currentRoom.value.gameState.board)
+  })
 
   // Actions
   async function findMatch(preferences: { mode: 'timed' | 'race', duration?: number, goalTarget?: number }) {
+    console.error('🚨 DEBUGGING: findMatch CALLED with preferences:', preferences)
     try {
-      if (!auth.currentUser?.phoneNumber) throw new Error('User not authenticated')
+      if (!auth.currentUser?.phoneNumber) {
+        console.error('❌ User not authenticated')
+        throw new Error('User not authenticated')
+      }
       
       matchmakingStatus.value = 'searching'
       error.value = null
 
-      // Add to matchmaking queue
       // Create base request with required fields
       const request: MatchRequest = {
         uid: auth.currentUser.uid,
@@ -43,6 +115,8 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         }
       }
 
+      console.error('🚨 DEBUGGING: Matchmaking request created:', JSON.stringify(request, null, 2))
+
       // Remove undefined values
       if (request.preferences.duration === undefined) {
         delete request.preferences.duration
@@ -53,29 +127,64 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       // Create a new request in the matchmaking queue
+      console.log('📝 Creating matchmaking request...')
       const queueRef = dbRef(db, 'matchmaking')
       const newRequestRef = await push(queueRef, request)
+      console.log('✅ Request registered with ID:', newRequestRef.key)
 
       // Listen for match
+      console.log('👀 Listening for match at:', `matches/${auth.currentUser.uid}`)
       const matchRef = dbRef(db, `matches/${auth.currentUser.uid}`)
+      console.log('🔍 Setting up match listener at:', matchRef.toString())
+      
+      // First, clear any existing match data
+      await set(matchRef, null)
+      
       const unsubscribe = onValue(matchRef, async (snapshot) => {
         const match = snapshot.val()
+        console.log('📨 Received match update:', match)
+        
+        if (match === null) {
+          console.log('⏳ Waiting for match...')
+          return
+        }
+        
         if (match?.roomId) {
-          // Found a match, clean up
+          console.log('🎯 Match found! Room ID:', match.roomId)
+          // Found a match, clean up listener
           unsubscribe()
-          await update(matchRef, {})
-          await update(newRequestRef, {})
-          await joinRoom(match.roomId)
+          
+          console.log('🚪 Joining room...')
+          const roomId = await joinRoom(match.roomId)
+          console.log('✨ Successfully joined room:', roomId)
+          
+          // Clear the match data after joining
+          await set(matchRef, null)
+          router.push('/game')
         }
       })
 
       // Clean up if component is unmounted
-      window.addEventListener('beforeunload', async () => {
+      console.log('🔄 Setting up cleanup for page unload...')
+      const cleanup = async () => {
+        console.log('🗑 Cleaning up matchmaking...')
         unsubscribe()
-        await update(newRequestRef, {})
-        await update(matchRef, {})
+        await set(newRequestRef, null)
+        await set(matchRef, null)
+        matchmakingStatus.value = 'idle'
+      }
+
+      // Set up cleanup for page unload
+      window.addEventListener('beforeunload', cleanup)
+
+      // Set up cleanup for errors
+      window.addEventListener('error', async () => {
+        unsubscribe()
+        await set(newRequestRef, null)
+        await set(matchRef, null)
       })
     } catch (e) {
+      console.error('❌ Matchmaking error:', e)
       error.value = (e as Error).message
       matchmakingStatus.value = 'idle'
       throw e
@@ -84,50 +193,180 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   async function joinRoom(roomId: string) {
     try {
-      if (!auth.currentUser?.phoneNumber) throw new Error('User not authenticated')
+      console.log('🚪 Attempting to join room:', roomId)
+      
+      if (!auth.currentUser?.phoneNumber) {
+        console.error('❌ User not authenticated')
+        throw new Error('User not authenticated')
+      }
       
       matchmakingStatus.value = 'joining'
       error.value = null
 
       // Join the room in Firestore
       const roomRef = doc(firestore, 'gameRooms', roomId)
-      await updateDoc(roomRef, {
-        [`players.${auth.currentUser.uid}`]: {
-          phoneNumber: auth.currentUser.phoneNumber,
-          ready: false,
-          score: 0
-        },
-        updatedAt: Date.now()
-      })
+      
+      // Determine player color
+      const updatedRoom = await getDoc(roomRef)
+      const roomData = updatedRoom.data()
+      const existingPlayers = roomData?.players || {}
+      const playerIds = Object.keys(existingPlayers)
+      
+      // Assign color based on join order
+      const playerColor = playerIds.length === 0 ? 'blue' : 'red'
 
-      // Subscribe to room updates
-      onSnapshot(roomRef, (doc) => {
+      console.log('🎨 Assigned player color:', playerColor)
+      console.log('👥 Existing players:', playerIds)
+
+      // Prepare player data
+      const playerData = {
+        uid: auth.currentUser.uid,
+        phoneNumber: auth.currentUser.phoneNumber,
+        displayName: auth.currentUser.displayName || 'Player',
+        color: playerColor,
+        ready: false,
+        score: 0
+      }
+
+      console.log('👤 Player data:', JSON.stringify(playerData))
+
+      // Prepare updated players object
+      const updatedPlayers = {
+        ...existingPlayers,
+        [auth.currentUser.uid]: playerData
+      }
+
+      // Debug logging for FORMATIONS import
+      console.error('🔍 FORMATIONS Import:', FORMATIONS)
+      console.error('🔍 FORMATIONS Keys:', Object.keys(FORMATIONS))
+      console.error('🔍 FORMATIONS Entries:', JSON.stringify(Object.entries(FORMATIONS), null, 2))
+
+      // Initialize board with starting positions
+      let defaultFormation
+      try {
+        defaultFormation = getDefaultFormation()
+        console.error('🏁 Default Formation Found:', JSON.stringify(defaultFormation, null, 2))
+      } catch (formationError) {
+        console.error('❌ Error getting default formation:', formationError)
+        
+        // Fallback mechanism
+        const firstFormation = Object.values(FORMATIONS)[0]
+        console.error('🚨 Using first available formation:', JSON.stringify(firstFormation, null, 2))
+        defaultFormation = firstFormation
+      }
+
+      const initialBoard = createInitialGameBoard(defaultFormation)
+
+      // Prepare game state
+      const gameState = {
+        board: JSON.stringify(initialBoard),
+        currentTurn: playerIds.length === 0 ? auth.currentUser.uid : null,
+        lastMove: null,
+        timestamp: Date.now(),
+        formation: defaultFormation.name  // Store formation name
+      }
+
+      // Prepare settings with default values
+      const settings = {
+        mode: roomData?.settings?.mode || 'timed',
+        duration: roomData?.settings?.duration || 300, // default 5 minutes
+        goalTarget: roomData?.settings?.goalTarget || 10 // default goal target
+      }
+
+      // Join the room
+      await setDoc(roomRef, {
+        players: updatedPlayers,
+        gameState: gameState,
+        settings: settings,
+        status: playerIds.length === 1 ? 'in_progress' : 'waiting',
+        createdAt: roomData?.createdAt || Date.now(),
+        updatedAt: Date.now()
+      }, { merge: true })
+
+      // Refresh the room data after joining
+      const finalRoom = await getDoc(roomRef)
+      const finalRoomData = finalRoom.data()
+      const finalPlayerIds = Object.keys(finalRoomData?.players || {})
+      
+      console.log('🏁 Final room players:', finalPlayerIds)
+
+      // If two players have joined, update game state
+      if (finalPlayerIds.length === 2) {
+        console.log('🎮 Starting game with two players')
+        await updateDoc(roomRef, {
+          status: 'in_progress',
+          'gameState.currentTurn': finalPlayerIds[0], // First player starts
+          'gameState.timestamp': Date.now()
+        })
+      }
+
+      // Set up a more robust snapshot listener
+      const unsubscribe = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
-          currentRoom.value = { id: doc.id, ...doc.data() } as GameRoom
+          const roomData = doc.data() as GameRoom
+          console.log('📡 Room snapshot update:', JSON.stringify(roomData))
+          
+          // Debug logging for formation
+          try {
+            const defaultFormation = getDefaultFormation()
+            console.error('🏁 Default Formation in Snapshot:', defaultFormation)
+          } catch (error) {
+            console.error('❌ Error getting default formation:', error)
+          }
+          
+          // Ensure all required fields are present
+          const safeRoomData = {
+            ...roomData,
+            settings: roomData.settings || {
+              mode: 'timed',
+              duration: 300,
+              goalTarget: 10
+            },
+            gameState: roomData.gameState || {
+              board: JSON.stringify(createInitialGameBoard(getDefaultFormation())),
+              currentTurn: null,
+              lastMove: null,
+              timestamp: Date.now(),
+              formation: getDefaultFormation().name  // Store formation name
+            }
+          }
+          
+          // Immediately set the current room
+          currentRoom.value = { 
+            id: doc.id, 
+            ...safeRoomData 
+          }
+          
+          // If room is in progress, navigate to game
+          if (safeRoomData.status === 'in_progress') {
+            console.log('🚀 Navigating to game')
+            router.replace('/game')
+          }
         } else {
+          console.warn('❌ Room no longer exists')
           currentRoom.value = null
         }
+      }, (error) => {
+        console.error('🔥 Snapshot error:', error)
       })
 
-      matchmakingStatus.value = 'idle'
-    } catch (e) {
-      error.value = (e as Error).message
-      matchmakingStatus.value = 'idle'
-      throw e
-    }
-  }
+      // Store unsubscribe function to clean up later if needed
+      currentRoom.value = { 
+        id: roomId, 
+        unsubscribe,
+        players: updatedPlayers,
+        status: 'waiting',
+        gameState: gameState,
+        settings: settings
+      } as GameRoom
 
-  async function setReady(ready: boolean) {
-    try {
-      if (!currentRoom.value || !auth.currentUser) return
-      
-      const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
-      await updateDoc(roomRef, {
-        [`players.${auth.currentUser.uid}.ready`]: ready,
-        updatedAt: Date.now()
-      })
+      matchmakingStatus.value = 'idle'
+
+      return roomId
     } catch (e) {
+      console.error('❌ Join room error:', e)
       error.value = (e as Error).message
+      matchmakingStatus.value = 'idle'
       throw e
     }
   }
@@ -185,11 +424,11 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     isInRoom,
     isMyTurn,
     myScore,
+    boardState,
     
     // Actions
     findMatch,
     joinRoom,
-    setReady,
     makeMove,
     leaveRoom
   }

@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import type { Player } from '@/stores/game'
+import type { Player } from '@/types/player'
 
 export default defineComponent({
   name: 'Player',

@@ -71,6 +71,7 @@ export const useGameStore = defineStore('game', {
       duration: 300, // 5 minutes default
       goalTarget: 5, // for race mode
       goalGap: 2, // for gap mode
+      formation: 'malformation'  // Add default formation
     },
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
