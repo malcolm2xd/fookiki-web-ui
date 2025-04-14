@@ -23,11 +23,11 @@ export interface Formation {
   }
 }
 
-export const FORMATIONS: Record<string, Formation> = {
-  'malformation': {
+export const FORMATIONS: Formation[] = [
+  {
     name: 'Mal-formation',
     description: 'Custom experimental formation',
-    default:true,
+    default: true,
     positions: {
       G: ['1E'],
       D: [
@@ -52,7 +52,7 @@ export const FORMATIONS: Record<string, Formation> = {
       red: '11F'
     }
   },
-  '4-4-2-diamond': {
+  {
     name: '4-4-2 Diamond',
     description: 'Classic formation with diamond midfield',
     default: false,
@@ -66,21 +66,21 @@ export const FORMATIONS: Record<string, Formation> = {
       ],
       M: [
         '5E', // Defensive mid
-        '6C', // Left mid
-        '6G', // Right mid
+        '6D', // Left mid
+        '6F', // Right mid
         '7E'  // Attacking mid
       ],
       F: [
-        '8E', // Fixed forward at E8
-        '8G'  // Right striker
+        '8E', // Left forward
+        '8G'  // Right forward
       ]
     },
     captains: {
       blue: '7E',
-      red: '10F'
+      red: '11F'
     }
   },
-  '4-4-2-flat': {
+  {
     name: '4-4-2 Flat',
     description: 'Traditional formation with flat midfield line',
     default: false,
@@ -108,7 +108,7 @@ export const FORMATIONS: Record<string, Formation> = {
       red: '11G'
     }
   },
-  '4-1-3-2': {
+  {
     name: '4-1-3-2',
     description: 'Balanced formation with holding midfielder',
     default: false,
@@ -136,7 +136,7 @@ export const FORMATIONS: Record<string, Formation> = {
       red: '12F'
     }
   },
-  '4-2-2-2': {
+  {
     name: '4-2-2-2',
     description: 'Box formation with double pivot',
     default: false,
@@ -164,4 +164,4 @@ export const FORMATIONS: Record<string, Formation> = {
       red: '10G'
     }
   }
-} 
+] 

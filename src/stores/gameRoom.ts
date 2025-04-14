@@ -4,8 +4,8 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GameRoom, MatchRequest } from '@/types/game'
-import { FORMATIONS } from '@/types/formations'
+import type { GameRoom, MatchRequest, Formation } from '@/types/game'
+import { FORMATIONS } from '../types/formations'
 import { initializeGameState } from '@/utils/gameInitializer'
 
 export const useGameRoomStore = defineStore('gameRoom', () => {
@@ -36,42 +36,17 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   }
 
   // Utility function to find default formation
-  function getDefaultFormation(): typeof FORMATIONS[keyof typeof FORMATIONS] {
-    // Validate FORMATIONS import
-    if (!FORMATIONS || typeof FORMATIONS !== 'object') {
-      console.error('❌ FORMATIONS is not a valid object:', FORMATIONS)
-      throw new Error('FORMATIONS is not properly imported')
-    }
-
-    // Log available formations for debugging
-    const formationKeys = Object.keys(FORMATIONS)
-    console.error('🔍 Available Formations:', formationKeys)
-
-    // Find default formation
-    const defaultFormations = Object.values(FORMATIONS).filter(formation => formation.default)
-    
-    // Handle default formation selection
-    if (defaultFormations.length === 0) {
-      console.error('❌ No default formation found. Available formations:', formationKeys)
-      
-      // Fallback: return the first formation if no default is found
-      if (formationKeys.length > 0) {
-        console.warn('⚠️ Using first available formation as default')
-        return FORMATIONS[formationKeys[0]]
-      }
-      
-      throw new Error('No formations available')
-    }
-
-    if (defaultFormations.length > 1) {
-      console.warn('⚠️ Multiple default formations found. Using the first one.')
-    }
-
-    return defaultFormations[0]
+  function getDefaultFormation(): string {
+    const defaultFormation = FORMATIONS.find(f => f.default)
+    return defaultFormation ? defaultFormation.name : FORMATIONS[0].name
   }
 
   // Utility function to create initial game board
-  function createInitialGameBoard(formation: typeof FORMATIONS[keyof typeof FORMATIONS]): number[][] {
+  function createInitialGameBoard(formationName: string): number[][] {
+    const formation = FORMATIONS.find(f => f.name === formationName)
+    if (!formation) {
+      throw new Error(`Formation ${formationName} not found`)
+    }
     const gameState = initializeGameState(formation.name)
     return gameState.board
   }
@@ -245,14 +220,14 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       let defaultFormation
       try {
         defaultFormation = getDefaultFormation()
-        console.error('🏁 Default Formation Found:', JSON.stringify(defaultFormation, null, 2))
+        console.error('🏁 Default Formation Found:', defaultFormation)
       } catch (formationError) {
         console.error('❌ Error getting default formation:', formationError)
         
         // Fallback mechanism
         const firstFormation = Object.values(FORMATIONS)[0]
         console.error('🚨 Using first available formation:', JSON.stringify(firstFormation, null, 2))
-        defaultFormation = firstFormation
+        defaultFormation = firstFormation.name
       }
 
       const initialBoard = createInitialGameBoard(defaultFormation)
@@ -263,7 +238,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         currentTurn: playerIds.length === 0 ? auth.currentUser.uid : null,
         lastMove: null,
         timestamp: Date.now(),
-        formation: defaultFormation.name  // Store formation name
+        formation: defaultFormation  // Store formation name
       }
 
       // Prepare settings with default values
@@ -327,7 +302,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
               currentTurn: null,
               lastMove: null,
               timestamp: Date.now(),
-              formation: getDefaultFormation().name  // Store formation name
+              formation: getDefaultFormation()  // Store formation name
             }
           }
           

@@ -35,6 +35,7 @@ export interface GameState {
     to: string;
   } | null;
   timestamp: number;
+  formation?: string;
 }
 
 export type GameRoomStatus = 'waiting' | 'in_progress' | 'playing' | 'finished';
@@ -42,16 +43,44 @@ export type GameRoomStatus = 'waiting' | 'in_progress' | 'playing' | 'finished';
 export interface GameRoom {
   id: string;
   status: GameRoomStatus;
-  players: {
-    [uid: string]: GamePlayer;
+  players: { [uid: string]: GamePlayer };
+  gameState?: {
+    board: {
+      blue: {
+        G: string[];
+        D: string[];
+        M: string[];
+        F: string[];
+      };
+      red: {
+        G: string[];
+        D: string[];
+        M: string[];
+        F: string[];
+      };
+      goals: {
+        blue: string[];
+        red: string[];
+      };
+    };
+    currentTurn: string | null;
+    lastMove?: {
+      player: 'blue' | 'red';
+      from: string;
+      to: string;
+    } | null;
+    timestamp: number;
+    formation?: string;
   };
-  gameState?: GameState;
-  settings?: {
+  settings: {
     mode: GameMode;
     duration?: number;
     formation?: string;
+  } | {
+    mode: 'timed';
+    duration: number;
+    goalTarget: number;
   };
-  unsubscribe?: () => void;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -74,4 +103,20 @@ export interface GameConfig {
   goalTarget: number;
   goalGap: number;
   formation?: string;
+}
+
+export interface Formation {
+  name: string;
+  description: string;
+  default: boolean;
+  positions: {
+    G: string[];
+    D: string[];
+    M: string[];
+    F: string[];
+  };
+  captains: {
+    blue: string;
+    red: string;
+  };
 }

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Player, Position, Team, PlayerRole } from '@/types/player'
-import type { GridConfig } from '@/types/grid'
+import type { Player, Position, Team, PlayerRole, GameMode, GridConfig, GameState } from './game'
+import type { Formation } from '@/types/formations'
 import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
 import { FORMATIONS } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
@@ -49,16 +49,19 @@ function parsePosition(coord: string): Position {
 
 // Helper function to create a player
 function createPlayer(team: Team, role: PlayerRole, positionStr: string, formationName: string): Player {
-  const position = parsePosition(positionStr)
-  const currentFormation = FORMATIONS['malformation'] // Use the correct formation key
+  const currentFormation = FORMATIONS.find(f => f.name === formationName)
+  if (!currentFormation) {
+    throw new Error(`Formation ${formationName} not found`)
+  }
+
   const isCaptain = positionStr === currentFormation.captains[team]
-  
+
   return {
     id: `${team}-${role}-${positionStr}`,
     team,
     role,
-    position,
-    initialPosition: { ...position },
+    position: parsePosition(positionStr),
+    initialPosition: { ...parsePosition(positionStr) },
     isCaptain
   }
 }
@@ -503,7 +506,7 @@ export const useGameStore = defineStore('game', {
       const beyondCol = opponentCol + (colDiff > 0 ? 1 : colDiff < 0 ? -1 : 0)
       
       // Check if the beyond position is valid and not occupied
-      const isWithinField = beyondRow >= 0 && beyondRow < this.gridConfig.playingField.rows &&
+      const isWithinField = beyondRow >= 0 && beyondRow < this.gridConfig.playingField.rows && 
                            beyondCol >= 0 && beyondCol < this.gridConfig.playingField.cols
       
       if (isWithinField) {
@@ -917,3 +920,54 @@ export const useGameStore = defineStore('game', {
     },
   },
 }) 
+
+// Utility function to calculate player positions
+function calculatePlayerPositions(
+  formation: Formation, 
+  team: Team, 
+  gridConfig: GridConfig
+): { [key: string]: Position } {
+  const positions: { [key: string]: Position } = {}
+  const teamPositions = formation.positions[team]
+
+  teamPositions.forEach((positionStr: string, i: number) => {
+    const pos = parsePosition(positionStr)
+    positions[positionStr] = {
+      row: team === 'blue' 
+        ? gridConfig.playingField.rows - 1 - pos.row 
+        : pos.row,
+      col: team === 'blue' 
+        ? gridConfig.playingField.cols - 1 - pos.col 
+        : pos.col
+    }
+  })
+
+  return positions
+}
+
+// Utility function to map player positions
+function mapPlayerPositions(
+  formation: Formation, 
+  team: Team, 
+  gridConfig: GridConfig
+): { [key: string]: string } {
+  const playerPositions: { [key: string]: string } = {}
+  const teamPositions = formation.positions[team]
+
+  teamPositions.forEach((positionStr: string, i: number) => {
+    const pos = parsePosition(positionStr)
+    playerPositions[positionStr] = `${team}-${pos.row}-${pos.col}`
+  })
+
+  return playerPositions
+}
+
+export type { 
+  Player, 
+  Position, 
+  Team, 
+  PlayerRole, 
+  GameMode, 
+  GridConfig, 
+  GameState 
+} from '@/types/game'

@@ -1,8 +1,11 @@
 import { GameState, GameRoom, GamePlayer, GameRoomStatus } from '../types/game';
 import { FORMATIONS } from '../types/formations';
 
-export function initializeGameState(formationName: string = 'malformation'): GameState {
-  const formation = FORMATIONS[formationName];
+export function initializeGameState(formationName: string = 'Mal-formation'): GameState {
+  const formation = FORMATIONS.find(f => f.name === formationName);
+  if (!formation) {
+    throw new Error(`Formation ${formationName} not found`);
+  }
   const board =  {
     board: {
       blue: {
@@ -33,7 +36,7 @@ export function initializeGameState(formationName: string = 'malformation'): Gam
 
 export function createGameRoom(
   players: {blue: GamePlayer, red: GamePlayer}, 
-  formationName: string = 'malformation'
+  formationName: string = 'Mal-formation'
 ): GameRoom {
   const gameRoom: GameRoom = {
     id: generateGameRoomId(),
