@@ -14,7 +14,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   // State
   const currentRoom = ref<GameRoom | null>(null)
-  const matchmakingStatus = ref<'idle' | 'searching' | 'joining'>('idle')
+  const matchmakingStatus = ref<'idle' | 'searching' | 'joining' | 'creating'>('idle')
   const error = ref<string | null>(null)
 
   // Utility function to parse board
@@ -42,13 +42,68 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   }
 
   // Utility function to create initial game board
-  function createInitialGameBoard(formationName: string): number[][] {
+  function createInitialGameBoard(formationName: string): {
+    blue: {
+      G: string[];
+      D: string[];
+      M: string[];
+      F: string[];
+    };
+    red: {
+      G: string[];
+      D: string[];
+      M: string[];
+      F: string[];
+    };
+    goals: {
+      blue: string[];
+      red: string[];
+    };
+    board: number[][];
+  } {
     const formation = FORMATIONS.find(f => f.name === formationName)
     if (!formation) {
       throw new Error(`Formation ${formationName} not found`)
     }
-    const gameState = initializeGameState(formation.name)
-    return gameState.board
+
+    // Create initial board structure matching the GameState type
+    const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null))
+    formation.positions.G.forEach((coord) => {
+      const [row, col] = parseCoordinate(coord)
+      initialBoard[row][col] = 'G'
+    })
+    formation.positions.D.forEach((coord) => {
+      const [row, col] = parseCoordinate(coord)
+      initialBoard[row][col] = 'D'
+    })
+    formation.positions.M.forEach((coord) => {
+      const [row, col] = parseCoordinate(coord)
+      initialBoard[row][col] = 'M'
+    })
+    formation.positions.F.forEach((coord) => {
+      const [row, col] = parseCoordinate(coord)
+      initialBoard[row][col] = 'F'
+    })
+
+    return {
+      blue: {
+        G: formation.positions.G,
+        D: formation.positions.D,
+        M: formation.positions.M,
+        F: formation.positions.F
+      },
+      red: {
+        G: formation.positions.G,
+        D: formation.positions.D,
+        M: formation.positions.M,
+        F: formation.positions.F
+      },
+      goals: {
+        blue: [],
+        red: []
+      },
+      board: initialBoard
+    }
   }
 
   // Getters
@@ -135,7 +190,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
           
           // Clear the match data after joining
           await set(matchRef, null)
-          router.push('/game')
+          router.push(`/game/${roomId}`)
         }
       })
 
@@ -168,178 +223,188 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   async function joinRoom(roomId: string) {
     try {
-      console.log('🚪 Attempting to join room:', roomId)
-      
-      if (!auth.currentUser?.phoneNumber) {
-        console.error('❌ User not authenticated')
+      if (!auth.currentUser) {
         throw new Error('User not authenticated')
       }
-      
+
+      console.log(`🔍 Attempting to join room: ${roomId}`)
       matchmakingStatus.value = 'joining'
       error.value = null
 
-      // Join the room in Firestore
       const roomRef = doc(firestore, 'gameRooms', roomId)
-      
-      // Determine player color
-      const updatedRoom = await getDoc(roomRef)
-      const roomData = updatedRoom.data()
-      const existingPlayers = roomData?.players || {}
-      const playerIds = Object.keys(existingPlayers)
-      
-      // Assign color based on join order
-      const playerColor = playerIds.length === 0 ? 'blue' : 'red'
+      const roomSnap = await getDoc(roomRef)
 
-      console.log('🎨 Assigned player color:', playerColor)
-      console.log('👥 Existing players:', playerIds)
+      console.log('🚪 Room Snapshot:', {
+        exists: roomSnap.exists(),
+        data: roomSnap.data()
+      })
 
+      if (!roomSnap.exists()) {
+        console.error(`❌ Room ${roomId} does not exist`)
+        throw new Error('Room does not exist')
+      }
+
+      const roomData = roomSnap.data() as GameRoom
+      const playerIds = Object.keys(roomData.players)
+
+      console.log('🏠 Room Data:', {
+        roomId,
+        status: roomData.status,
+        players: playerIds,
+        currentUser: auth.currentUser.uid
+      })
+
+      // Check if room is full or game is already in progress
+      if (playerIds.length >= 2) {
+        if (roomData.status === 'in_progress' && !playerIds.includes(auth.currentUser.uid)) {
+          console.error('❌ Room is full or game is in progress')
+          throw new Error('Room is full or game is in progress')
+        }
+      }
+
+      // Prepare player data for the second player
+      const playerData = {
+        uid: auth.currentUser.uid,
+        phoneNumber: auth.currentUser.phoneNumber,
+        displayName: auth.currentUser.displayName || 'Player',
+        color: playerIds.length === 0 ? 'blue' : 'red',
+        ready: false,
+        score: 0
+      }
+
+      // Update room with new player
+      await updateDoc(roomRef, {
+        [`players.${auth.currentUser.uid}`]: playerData,
+        updatedAt: Date.now()
+      })
+
+      // If two players have joined, update room status
+      if (Object.keys(roomData.players).length + 1 === 2) {
+        await updateDoc(roomRef, {
+          status: 'in_progress',
+          'gameState.currentTurn': playerIds[0] || auth.currentUser.uid,
+          'gameState.startTime': Date.now(),
+          'gameState.timestamp': Date.now()
+        })
+      }
+
+      // Navigate to the game URL
+      router.push(`/game/${roomId}`)
+
+      // Listen for room updates
+      const unsubscribe = onSnapshot(roomRef, (doc) => {
+        if (doc.exists()) {
+          const updatedRoomData = doc.data() as GameRoom
+          
+          // Ensure the room data has an ID
+          const roomWithId = { 
+            ...updatedRoomData, 
+            id: doc.id 
+          }
+
+          // Update the current room
+          currentRoom.value = roomWithId
+          console.log('🔄 Room Updated:', currentRoom.value)
+        }
+      })
+
+      matchmakingStatus.value = 'idle'
+      return roomId
+    } catch (e) {
+      console.error('❌ Join room error:', e)
+      error.value = (e as Error).message
+      matchmakingStatus.value = 'idle'
+      throw e
+    }
+  }
+
+  async function createRoom(config: { mode: 'timed' | 'race', duration?: number, goalTarget?: number }) {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated')
+      }
+
+      matchmakingStatus.value = 'creating'
+      error.value = null
+
+      // Create a new room in Firestore
+      const roomRef = doc(collection(firestore, 'gameRooms'))
+      
       // Prepare player data
       const playerData = {
         uid: auth.currentUser.uid,
         phoneNumber: auth.currentUser.phoneNumber,
         displayName: auth.currentUser.displayName || 'Player',
-        color: playerColor,
+        color: 'blue',
         ready: false,
         score: 0
       }
 
-      console.log('👤 Player data:', JSON.stringify(playerData))
+      // Determine default formation
+      const defaultFormation = getDefaultFormation()
 
-      // Prepare updated players object
-      const updatedPlayers = {
-        ...existingPlayers,
-        [auth.currentUser.uid]: playerData
-      }
+      // Prepare initial game state
+      const initialGameState = createInitialGameBoard(defaultFormation)
 
-      // Debug logging for FORMATIONS import
-      console.error('🔍 FORMATIONS Import:', FORMATIONS)
-      console.error('🔍 FORMATIONS Keys:', Object.keys(FORMATIONS))
-      console.error('🔍 FORMATIONS Entries:', JSON.stringify(Object.entries(FORMATIONS), null, 2))
-
-      // Initialize board with starting positions
-      let defaultFormation
-      try {
-        defaultFormation = getDefaultFormation()
-        console.error('🏁 Default Formation Found:', defaultFormation)
-      } catch (formationError) {
-        console.error('❌ Error getting default formation:', formationError)
-        
-        // Fallback mechanism
-        const firstFormation = Object.values(FORMATIONS)[0]
-        console.error('🚨 Using first available formation:', JSON.stringify(firstFormation, null, 2))
-        defaultFormation = firstFormation.name
-      }
-
-      const initialBoard = createInitialGameBoard(defaultFormation)
-
-      // Prepare game state
-      const gameState = {
-        board: initialBoard,
-        currentTurn: playerIds.length === 0 ? auth.currentUser.uid : null,
-        lastMove: null,
-        timestamp: Date.now(),
-        formation: defaultFormation  // Store formation name
-      }
-
-      // Prepare settings with default values
-      const settings = {
-        mode: roomData?.settings?.mode || 'timed',
-        duration: roomData?.settings?.duration || 300, // default 5 minutes
-        goalTarget: roomData?.settings?.goalTarget || 10 // default goal target
-      }
-
-      // Join the room
-      await setDoc(roomRef, {
-        players: updatedPlayers,
-        gameState: gameState,
-        settings: settings,
-        status: playerIds.length === 1 ? 'in_progress' : 'waiting',
-        createdAt: roomData?.createdAt || Date.now(),
+      // Prepare room data
+      const roomData = {
+        players: { [auth.currentUser.uid]: playerData },
+        gameState: initialGameState,
+        settings: {
+          mode: config.mode,
+          duration: config.duration,
+          goalTarget: config.goalTarget
+        },
+        status: 'waiting',
+        createdAt: Date.now(),
         updatedAt: Date.now()
-      }, { merge: true })
-
-      // Refresh the room data after joining
-      const finalRoom = await getDoc(roomRef)
-      const finalRoomData = finalRoom.data()
-      const finalPlayerIds = Object.keys(finalRoomData?.players || {})
-      
-      console.log('🏁 Final room players:', finalPlayerIds)
-
-      // If two players have joined, update game state
-      if (finalPlayerIds.length === 2) {
-        console.log('🎮 Starting game with two players')
-        await updateDoc(roomRef, {
-          status: 'in_progress',
-          'gameState.currentTurn': finalPlayerIds[0], // First player starts
-          'gameState.timestamp': Date.now()
-        })
       }
 
-      // Set up a more robust snapshot listener
-      const unsubscribe = onSnapshot(roomRef, (doc) => {
-        if (doc.exists()) {
-          const roomData = doc.data() as GameRoom
-          console.log('📡 Room snapshot update:', JSON.stringify(roomData))
-          
-          // Debug logging for formation
-          try {
-            const defaultFormation = getDefaultFormation()
-            console.error('🏁 Default Formation in Snapshot:', defaultFormation)
-          } catch (error) {
-            console.error('❌ Error getting default formation:', error)
-          }
-          
-          // Ensure all required fields are present
-          const safeRoomData = {
-            ...roomData,
-            settings: roomData.settings || {
-              mode: 'timed',
-              duration: 300,
-              goalTarget: 10
-            },
-            gameState: roomData.gameState || {
-              board: createInitialGameBoard(getDefaultFormation()),
-              currentTurn: null,
-              lastMove: null,
-              timestamp: Date.now(),
-              formation: getDefaultFormation()  // Store formation name
-            }
-          }
-          
-          // Immediately set the current room
-          currentRoom.value = { 
-            id: doc.id, 
-            ...safeRoomData 
-          }
-          
-          // If room is in progress, navigate to game
-          if (safeRoomData.status === 'in_progress') {
-            console.log('🚀 Navigating to game')
-            router.replace('/game')
-          }
-        } else {
-          console.warn('❌ Room no longer exists')
-          currentRoom.value = null
+      // Save the room
+      await setDoc(roomRef, roomData)
+
+      // Set up a match request
+      const matchRef = dbRef(db, `matchRequests/${auth.currentUser.uid}`)
+      await set(matchRef, {
+        uid: auth.currentUser.uid,
+        phoneNumber: auth.currentUser.phoneNumber,
+        timestamp: Date.now(),
+        preferences: {
+          mode: config.mode,
+          duration: config.duration,
+          goalTarget: config.goalTarget
         }
-      }, (error) => {
-        console.error('🔥 Snapshot error:', error)
       })
 
-      // Store unsubscribe function to clean up later if needed
-      currentRoom.value = { 
-        id: roomId, 
-        unsubscribe,
-        players: updatedPlayers,
-        status: 'waiting',
-        gameState: gameState,
-        settings: settings
-      } as GameRoom
+      // Listen for another player joining
+      const unsubscribe = onSnapshot(roomRef, async (doc) => {
+        if (doc.exists()) {
+          const roomData = doc.data() as GameRoom
+          const playerIds = Object.keys(roomData.players)
+          
+          // If two players have joined, start the game
+          if (playerIds.length === 2) {
+            await updateDoc(roomRef, {
+              status: 'in_progress',
+              'gameState.currentTurn': playerIds[0],
+              'gameState.startTime': Date.now(),
+              'gameState.timestamp': Date.now()
+            })
+            
+            // Navigate to the game with the room ID
+            router.push(`/game/${doc.id}`)
+            
+            // Clear the match data after joining
+            await set(matchRef, null)
+          }
+        }
+      })
 
       matchmakingStatus.value = 'idle'
 
-      return roomId
+      return roomRef.id
     } catch (e) {
-      console.error('❌ Join room error:', e)
+      console.error('❌ Create room error:', e)
       error.value = (e as Error).message
       matchmakingStatus.value = 'idle'
       throw e
@@ -408,6 +473,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     // Actions
     findMatch,
     joinRoom,
+    createRoom,
     makeMove,
     leaveRoom
   }

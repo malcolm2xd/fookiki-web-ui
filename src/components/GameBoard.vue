@@ -109,12 +109,16 @@
       </div>
       </div>
     </div>
+    <div class="countdown-timer">{{ remainingTime }}</div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref } from 'vue'
+import { defineComponent, computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { useGameRoomStore } from '@/stores/gameRoom'
+import { useAuthStore } from '@/stores/auth'
 import type { Position } from '@/types/player'
 import GameState from './GameState.vue'
 import GameHelp from './GameHelp.vue'
@@ -128,18 +132,68 @@ export default defineComponent({
     CelebrationModal
   },
   setup() {
-    const store = useGameStore()
-    const showHelp = ref(false)
-    
-    const gridConfig = computed(() => store.gridConfig)
-    const totalDimensions = computed(() => store.totalDimensions)
-    const players = computed(() => store.allPlayers)
-    const selectedPlayerId = computed(() => store.selectedPlayerId)
-    const validMoves = computed(() => store.validMoves)
-    const ballPosition = computed(() => store.ballPosition)
-    const currentTeam = computed(() => store.currentTeam)
-    const isBallSelected = computed(() => store.isBallSelected)
-    const isFirstMove = computed(() => store.isFirstMove)
+    const route = useRoute()
+    const gameStore = useGameStore()
+    const gameRoomStore = useGameRoomStore()
+    const authStore = useAuthStore()
+    const router = useRouter()
+
+    const gameId = computed(() => route.params.gameId as string)
+    const remainingTime = ref(0)
+    const countdownTimer = ref<NodeJS.Timeout | null>(null)
+
+    const startCountdown = () => {
+      const startTime = gameRoomStore.currentRoom?.gameState?.startTime || Date.now()
+      const gameDuration = gameRoomStore.currentRoom?.settings?.duration || 300 // Default 5 minutes
+
+      const updateRemainingTime = () => {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000)
+        remainingTime.value = Math.max(0, gameDuration - elapsedTime)
+
+        if (remainingTime.value <= 0 && countdownTimer.value) {
+          clearInterval(countdownTimer.value)
+          // Handle game end logic here
+        }
+      }
+
+      // Initial update
+      updateRemainingTime()
+
+      // Start interval timer
+      countdownTimer.value = setInterval(updateRemainingTime, 1000)
+    }
+
+    onMounted(async () => {
+      try {
+        // If no current room or different game ID, try to join the room
+        if (!gameRoomStore.currentRoom || gameRoomStore.currentRoom.id !== gameId.value) {
+          await gameRoomStore.joinRoom(gameId.value)
+        }
+
+        // Explicitly set the current room from the store
+        const roomData = gameRoomStore.currentRoom
+        console.log('🎮 Game Room Entry:', roomData)
+
+        // Start countdown when game is in progress
+        if (roomData?.status === 'in_progress') {
+          startCountdown()
+        }
+      } catch (error) {
+        console.error('Failed to join game:', error)
+        // Redirect to lobby or show error
+        router.push('/lobby')
+      }
+    })
+
+    const gridConfig = computed(() => gameStore.gridConfig)
+    const totalDimensions = computed(() => gameStore.totalDimensions)
+    const players = computed(() => gameStore.allPlayers)
+    const selectedPlayerId = computed(() => gameStore.selectedPlayerId)
+    const validMoves = computed(() => gameStore.validMoves)
+    const ballPosition = computed(() => gameStore.ballPosition)
+    const currentTeam = computed(() => gameStore.currentTeam)
+    const isBallSelected = computed(() => gameStore.isBallSelected)
+    const isFirstMove = computed(() => gameStore.isFirstMove)
 
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find(p => p.position.row === row && p.position.col === col)
@@ -154,7 +208,7 @@ export default defineComponent({
     }
 
     const handleBallClick = () => {
-      store.selectBall()
+      gameStore.selectBall()
     }
 
     const handleCellClick = (row: number, col: number) => {
@@ -162,24 +216,24 @@ export default defineComponent({
       
       // If clicking on a non-move area, unselect
       if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
-        store.selectCell({ row, col })
+        gameStore.selectCell({ row, col })
         return
       }
       
       // Only allow selecting players from the current team
       if (player && player.team !== currentTeam.value) {
-        store.selectCell({ row, col })
+        gameStore.selectCell({ row, col })
         return
       }
       
       // If clicking on a player from the current team, select it
       if (player && player.team === currentTeam.value) {
-        store.selectCell({ row, col })
+        gameStore.selectCell({ row, col })
         return
       }
       
       // For ball movement
-      store.selectCell({ row, col })
+      gameStore.selectCell({ row, col })
     }
     
     return {
@@ -193,8 +247,9 @@ export default defineComponent({
       handleCellClick,
       handleBallClick,
       isBallSelected,
-      showHelp,
-      isFirstMove
+      isFirstMove,
+      remainingTime,
+      gameId
     }
   }
 })
@@ -554,6 +609,12 @@ export default defineComponent({
 
 .ball.clickable {
   cursor: pointer;
+}
+
+.countdown-timer {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {

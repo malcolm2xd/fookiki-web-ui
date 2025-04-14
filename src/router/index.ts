@@ -48,7 +48,7 @@ const router = createRouter({
       redirect: '/lobby'
     },
     {
-      path: '/game',
+      path: '/game/:gameId',
       name: 'game',
       component: GameBoard,
       beforeEnter: requireAuth
