@@ -20,6 +20,17 @@
       <div class="opponent-selector">
         <button 
           class="opponent-button"
+          @click="selectOpponent('online')"
+          :class="{ active: selectedOpponent === 'online' }"
+        >
+          <div class="opponent-icon">🌐</div>
+          <div class="opponent-info">
+            <h3>Online</h3>
+            <p>Play against others online</p>
+          </div>
+        </button>
+        <button 
+          class="opponent-button"
           @click="selectOpponent('local')"
           :class="{ active: selectedOpponent === 'local' }"
         >
@@ -40,17 +51,7 @@
             <p>Play against AI (Coming soon)</p>
           </div>
         </button>
-        <button 
-          class="opponent-button"
-          @click="selectOpponent('online')"
-          :class="{ active: selectedOpponent === 'online' }"
-        >
-          <div class="opponent-icon">🌐</div>
-          <div class="opponent-info">
-            <h3>Online</h3>
-            <p>Play against others online</p>
-          </div>
-        </button>
+
       </div>
     </div>
     
@@ -216,7 +217,7 @@ const authStore = useAuthStore()
 const gameStore = useGameStore()
 const gameRoomStore = useGameRoomStore()
 type OpponentType = 'local' | 'ai' | 'online'
-const selectedOpponent = ref<OpponentType>('local')
+const selectedOpponent = ref<OpponentType>('online')
 const displayName = ref('Player')
 const phoneNumber = ref('')
 

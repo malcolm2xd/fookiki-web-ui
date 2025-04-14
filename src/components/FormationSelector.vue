@@ -17,9 +17,6 @@
         {{ formation.name }}
       </option>
     </select>
-    <p class="mt-2 text-sm text-gray-500">
-      {{ currentFormation?.description }}
-    </p>
   </div>
 </template>
 
