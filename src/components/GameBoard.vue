@@ -1,5 +1,18 @@
 <template>
-  <div class="game-container">
+  <div v-if="isRoomLoading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Loading game room...</p>
+  </div>
+
+  <div v-else-if="roomError" class="error-overlay">
+    <div class="error-content">
+      <h2>Game Room Error</h2>
+      <p>{{ roomError }}</p>
+      <button @click="returnToLobby">Return to Lobby</button>
+    </div>
+  </div>
+
+  <div v-else class="game-container">
     <div class="game-controls">
       <GameState class="game-state" />
       <button class="help-button" @click="showHelp = true">
@@ -29,9 +42,9 @@
               @click="handleCellClick(-1, col - 2)"
             >
               <div v-if="isBallAtPosition(-1, col - 2)" class="ball">⚽</div>
-      </div>
-    </div>
-    
+            </div>
+          </div>
+
           <!-- Playing Field Rows -->
           <template v-for="row in gridConfig.playingField.rows" :key="`row-${row}`">
             <!-- First column: Row numbers -->
@@ -106,10 +119,9 @@
               <div v-if="isBallAtPosition(16, col - 2)" class="ball">⚽</div>
             </div>
           </div>
-      </div>
+        </div>
       </div>
     </div>
-    <div class="countdown-timer">{{ remainingTime }}</div>
   </div>
 </template>
 
@@ -141,6 +153,8 @@ export default defineComponent({
     const gameId = computed(() => route.params.gameId as string)
     const remainingTime = ref(0)
     const countdownTimer = ref<NodeJS.Timeout | null>(null)
+    const roomError = ref<string | null>(null)
+    const isRoomLoading = ref(true)
 
     const startCountdown = () => {
       const startTime = gameRoomStore.currentRoom?.gameState?.startTime || Date.now()
@@ -165,23 +179,42 @@ export default defineComponent({
 
     onMounted(async () => {
       try {
+        isRoomLoading.value = true
+        roomError.value = null
+
         // If no current room or different game ID, try to join the room
         if (!gameRoomStore.currentRoom || gameRoomStore.currentRoom.id !== gameId.value) {
           await gameRoomStore.joinRoom(gameId.value)
         }
 
-        // Explicitly set the current room from the store
+        // Wait a moment to ensure room data is populated
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Check if room data exists after joining
+        if (!gameRoomStore.currentRoom) {
+          roomError.value = 'Failed to load game room data'
+          isRoomLoading.value = false
+          return
+        }
+
+        // Room data is now available
         const roomData = gameRoomStore.currentRoom
         console.log('🎮 Game Room Entry:', roomData)
 
         // Start countdown when game is in progress
-        if (roomData?.status === 'in_progress') {
+        if (roomData.status === 'in_progress') {
           startCountdown()
         }
+
+        isRoomLoading.value = false
       } catch (error) {
-        console.error('Failed to join game:', error)
-        // Redirect to lobby or show error
-        router.push('/lobby')
+        isRoomLoading.value = false
+        if ((error as Error).message === 'ROOM_NOT_FOUND') {
+          roomError.value = 'Game room not found. It may have been deleted or never existed.'
+        } else {
+          roomError.value = 'An error occurred while joining the game room.'
+          console.error('Failed to join game:', error)
+        }
       }
     })
 
@@ -236,6 +269,12 @@ export default defineComponent({
       gameStore.selectCell({ row, col })
     }
     
+    const returnToLobby = () => {
+      router.push('/lobby')
+    }
+
+    const showHelp = ref(false)
+
     return {
       gridConfig,
       totalDimensions,
@@ -249,7 +288,11 @@ export default defineComponent({
       isBallSelected,
       isFirstMove,
       remainingTime,
-      gameId
+      gameId,
+      roomError,
+      isRoomLoading,
+      returnToLobby,
+      showHelp
     }
   }
 })
@@ -615,6 +658,91 @@ export default defineComponent({
   font-size: 2rem;
   font-weight: bold;
   margin-top: 1rem;
+}
+
+.error-message {
+  color: red;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.loading-message {
+  color: #1976D2;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  border: 8px solid rgba(0, 0, 0, 0.1);
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.error-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  text-align: center;
+}
+
+.error-content h2 {
+  margin-top: 0;
+}
+
+.error-content button {
+  background-color: #1976D2;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.error-content button:hover {
+  background-color: #1565C0;
 }
 
 @media (max-width: 768px) {

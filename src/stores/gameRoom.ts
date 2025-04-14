@@ -241,7 +241,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
       if (!roomSnap.exists()) {
         console.error(`❌ Room ${roomId} does not exist`)
-        throw new Error('Room does not exist')
+        throw new Error('ROOM_NOT_FOUND')
       }
 
       const roomData = roomSnap.data() as GameRoom
