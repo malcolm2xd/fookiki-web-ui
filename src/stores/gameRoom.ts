@@ -234,7 +234,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
       // Prepare game state
       const gameState = {
-        board: JSON.stringify(initialBoard),
+        board: initialBoard,
         currentTurn: playerIds.length === 0 ? auth.currentUser.uid : null,
         lastMove: null,
         timestamp: Date.now(),
@@ -298,7 +298,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
               goalTarget: 10
             },
             gameState: roomData.gameState || {
-              board: JSON.stringify(createInitialGameBoard(getDefaultFormation())),
+              board: createInitialGameBoard(getDefaultFormation()),
               currentTurn: null,
               lastMove: null,
               timestamp: Date.now(),
@@ -351,13 +351,17 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       if (!currentRoom.value || !auth.currentUser || !isMyTurn.value) return
       
       const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
-      await updateDoc(roomRef, {
+      
+      // Prepare the update object with only the fields that need to change
+      const updateData: Record<string, any> = {
         'gameState.board': currentRoom.value.gameState.board, // Updated board state
         'gameState.currentTurn': getNextTurnPlayer(),
         'gameState.lastMove': { from, to },
         'gameState.timestamp': Date.now(),
         updatedAt: Date.now()
-      })
+      }
+
+      await updateDoc(roomRef, updateData)
     } catch (e) {
       error.value = (e as Error).message
       throw e
