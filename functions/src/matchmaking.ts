@@ -1,5 +1,7 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import * as functions from 'firebase-functions'
+import { db } from './firebaseAdmin'
+import { createInitialGameBoard, getDefaultFormation } from './gameUtils'
 
 // Initialize admin with project credentials
 if (!admin.apps.length) {
@@ -223,12 +225,11 @@ export const handleMatchmaking = functions.database.ref('/matchmaking/{requestId
               score: 0
             }
           },
-          gameState: {
-            currentTurn: uid,
-            board: JSON.stringify(Array(8).fill(null).map(() => Array(8).fill(null))),
-            lastMove: null,
-            timestamp: Date.now()
-          }
+          gameState: (() => {
+            const initialGameState = createInitialGameBoard(getDefaultFormation())
+            initialGameState.currentTurn = uid
+            return initialGameState
+          })()
         })
 
         // Mark both requests as matched first

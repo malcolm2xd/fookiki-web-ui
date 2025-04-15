@@ -54,6 +54,12 @@ const router = createRouter({
       beforeEnter: requireAuth
     },
     {
+      path: '/selfgame',
+      name: 'selfgame',
+      component: GameBoard,
+      beforeEnter: requireAuth
+    },
+    {
       path: '/lobby',
       name: 'lobby',
       component: GameConfig,

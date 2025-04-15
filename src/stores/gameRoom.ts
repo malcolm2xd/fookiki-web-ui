@@ -118,7 +118,25 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   })
   const boardState = computed(() => {
     if (!currentRoom.value?.gameState) return Array(8).fill(null).map(() => Array(8).fill(null))
-    return parseBoard(currentRoom.value.gameState.board)
+    
+    // Convert complex board object to 2D number array
+    const board = Array(8).fill(null).map(() => Array(8).fill(null))
+    
+    // Helper function to place pieces
+    const placePieces = (color: 'blue' | 'red', pieces: { G: string[], D: string[], M: string[], F: string[] }) => {
+      const pieceTypes = { G: 1, D: 2, M: 3, F: 4 }
+      Object.entries(pieces).forEach(([type, coords]) => {
+        coords.forEach(coord => {
+          const [row, col] = parseCoordinate(coord)
+          board[row][col] = pieceTypes[type as keyof typeof pieceTypes] * (color === 'blue' ? 1 : -1)
+        })
+      })
+    }
+    
+    placePieces('blue', currentRoom.value.gameState.board.blue)
+    placePieces('red', currentRoom.value.gameState.board.red)
+    
+    return board
   })
 
   // Actions
@@ -318,98 +336,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     }
   }
 
-  async function createRoom(config: { mode: 'timed' | 'race', duration?: number, goalTarget?: number }) {
-    try {
-      if (!auth.currentUser) {
-        throw new Error('User not authenticated')
-      }
-
-      matchmakingStatus.value = 'creating'
-      error.value = null
-
-      // Create a new room in Firestore
-      const roomRef = doc(collection(firestore, 'gameRooms'))
-      
-      // Prepare player data
-      const playerData = {
-        uid: auth.currentUser.uid,
-        phoneNumber: auth.currentUser.phoneNumber,
-        displayName: auth.currentUser.displayName || 'Player',
-        color: 'blue',
-        ready: false,
-        score: 0
-      }
-
-      // Determine default formation
-      const defaultFormation = getDefaultFormation()
-
-      // Prepare initial game state
-      const initialGameState = createInitialGameBoard(defaultFormation)
-
-      // Prepare room data
-      const roomData = {
-        players: { [auth.currentUser.uid]: playerData },
-        gameState: initialGameState,
-        settings: {
-          mode: config.mode,
-          duration: config.duration,
-          goalTarget: config.goalTarget
-        },
-        status: 'waiting',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
-
-      // Save the room
-      await setDoc(roomRef, roomData)
-
-      // Set up a match request
-      const matchRef = dbRef(db, `matchRequests/${auth.currentUser.uid}`)
-      await set(matchRef, {
-        uid: auth.currentUser.uid,
-        phoneNumber: auth.currentUser.phoneNumber,
-        timestamp: Date.now(),
-        preferences: {
-          mode: config.mode,
-          duration: config.duration,
-          goalTarget: config.goalTarget
-        }
-      })
-
-      // Listen for another player joining
-      const unsubscribe = onSnapshot(roomRef, async (doc) => {
-        if (doc.exists()) {
-          const roomData = doc.data() as GameRoom
-          const playerIds = Object.keys(roomData.players)
-          
-          // If two players have joined, start the game
-          if (playerIds.length === 2) {
-            await updateDoc(roomRef, {
-              status: 'in_progress',
-              'gameState.currentTurn': playerIds[0],
-              'gameState.startTime': Date.now(),
-              'gameState.timestamp': Date.now()
-            })
-            
-            // Navigate to the game with the room ID
-            router.push(`/game/${doc.id}`)
-            
-            // Clear the match data after joining
-            await set(matchRef, null)
-          }
-        }
-      })
-
-      matchmakingStatus.value = 'idle'
-
-      return roomRef.id
-    } catch (e) {
-      console.error('❌ Create room error:', e)
-      error.value = (e as Error).message
-      matchmakingStatus.value = 'idle'
-      throw e
-    }
-  }
 
   async function makeMove(from: [number, number], to: [number, number]) {
     try {
@@ -473,7 +399,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     // Actions
     findMatch,
     joinRoom,
-    createRoom,
     makeMove,
     leaveRoom
   }
