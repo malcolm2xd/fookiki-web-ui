@@ -325,7 +325,7 @@ async function startGame() {
     
     // Initialize and start the game
     gameStore.initializeGame()
-    router.push('/game')
+    router.push('/selfgame')
   }
 }
 </script>

@@ -7,6 +7,7 @@ const LoginView = () => import('@/components/LoginView.vue');
 const GameBoard = () => import('@/components/GameBoard.vue');
 const GameConfig = () => import('@/components/GameConfig.vue');
 const GameRoom = () => import('@/components/GameRoom.vue');
+const SinglePlay = () => import('@/components/SinglePlay.vue');
 
 // Auth guard - only allow authenticated users
 function requireAuth(
@@ -56,7 +57,7 @@ const router = createRouter({
     {
       path: '/selfgame',
       name: 'selfgame',
-      component: GameBoard,
+      component: SinglePlay,
       beforeEnter: requireAuth
     },
     {
