@@ -74,7 +74,7 @@ export const useGameStore = defineStore('game', {
       duration: 300, // 5 minutes default
       goalTarget: 5, // for race mode
       goalGap: 2, // for gap mode
-      formation: 'malformation'  // Add default formation
+      formation: Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
     },
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
@@ -86,7 +86,7 @@ export const useGameStore = defineStore('game', {
     gamePhase: 'BALL_MOVEMENT' as 'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER',
     score: { blue: 0, red: 0 },
     winner: null as Team | null,
-    currentFormation: Object.entries(FORMATIONS).find(([_, f]) => f.default)?.[0] || 'malformation' as string,
+    currentFormation: Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0],
     isFirstMove: true as boolean,
     blueScore: 0,
     redScore: 0,
@@ -151,6 +151,7 @@ export const useGameStore = defineStore('game', {
 
     setFormation(formationKey: string) {
       if (FORMATIONS[formationKey]) {
+        this.gameConfig.formation = formationKey
         this.currentFormation = formationKey
         this.initializeGame()
       }
@@ -158,7 +159,11 @@ export const useGameStore = defineStore('game', {
 
     initializeGame() {
       const formation = FORMATIONS[this.currentFormation]
-      if (!formation) return
+      if (!formation) {
+        // Fallback to default formation if current is invalid
+        this.currentFormation = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
+        return
+      }
 
       // Clean up any existing timers first
       this.stopGameTimer()

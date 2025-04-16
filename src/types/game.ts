@@ -75,11 +75,9 @@ export interface GameRoom {
   settings: {
     mode: GameMode;
     duration?: number;
+    goalTarget?: number;
+    goalGap?: number;
     formation?: string;
-  } | {
-    mode: 'timed';
-    duration: number;
-    goalTarget: number;
   };
   createdAt?: number;
   updatedAt?: number;
@@ -96,13 +94,15 @@ export interface MatchRequest {
   };
 }
 
+export type OpponentType = 'local' | 'ai' | 'online' | 'same_screen_online';
+
 export interface GameConfig {
-  opponent: 'local' | 'ai' | 'online';
+  opponent: OpponentType;
   mode: string;
   duration: number;
   goalTarget: number;
   goalGap: number;
-  formation?: string;
+  formation: string;
 }
 
 export interface Formation {

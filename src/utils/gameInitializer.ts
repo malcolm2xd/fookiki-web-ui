@@ -1,10 +1,10 @@
 import { GameState, GameRoom, GamePlayer, GameRoomStatus } from '../types/game';
 import { FORMATIONS } from '../types/formations';
 
-export function initializeGameState(formationName: string = 'Mal-formation'): GameState {
-  const formation = FORMATIONS.find(f => f.name === formationName);
+export function initializeGameState(formationKey: string = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]): GameState {
+  const formation = FORMATIONS[formationKey];
   if (!formation) {
-    throw new Error(`Formation ${formationName} not found`);
+    throw new Error(`Formation ${formationKey} not found`);
   }
   const board =  {
     board: {
@@ -36,7 +36,7 @@ export function initializeGameState(formationName: string = 'Mal-formation'): Ga
 
 export function createGameRoom(
   players: {blue: GamePlayer, red: GamePlayer}, 
-  formationName: string = 'Mal-formation'
+  formationKey: string = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
 ): GameRoom {
   const gameRoom: GameRoom = {
     id: generateGameRoomId(),
@@ -45,7 +45,7 @@ export function createGameRoom(
       [players.blue.uid]: players.blue,
       [players.red.uid]: players.red
     },
-    gameState: initializeGameState(formationName),
+    gameState: initializeGameState(formationKey),
     settings: {
       mode: 'timed',
       duration: 10 * 60,  // 10 minutes default

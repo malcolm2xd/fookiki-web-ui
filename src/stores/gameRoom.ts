@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
-import { doc, setDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore'
+import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 import type { GameRoom, MatchRequest, Formation } from '@/types/game'
 import { FORMATIONS } from '../types/formations'
@@ -26,6 +26,14 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       // Return empty board if parsing fails
       return Array(8).fill(null).map(() => Array(8).fill(null))
     }
+  }
+
+  // Safe getter for game state
+  function getGameState() {
+    if (!currentRoom.value) {
+      throw new Error('No current game room')
+    }
+    return currentRoom.value.gameState || initializeGameState(getDefaultFormation())
   }
 
   // Convert string coordinate (e.g., '3B') to [row, col]
@@ -133,14 +141,48 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       })
     }
     
-    placePieces('blue', currentRoom.value.gameState.board.blue)
-    placePieces('red', currentRoom.value.gameState.board.red)
+    const gameState = currentRoom.value.gameState
+    if (gameState?.board?.blue && gameState?.board?.red) {
+      placePieces('blue', gameState.board.blue)
+      placePieces('red', gameState.board.red)
+    }
     
     return board
   })
 
   // Actions
-  async function findMatch(preferences: { mode: 'timed' | 'race', duration?: number, goalTarget?: number }) {
+  async function createGameRoom(gameRoom: GameRoom): Promise<string> {
+    try {
+      if (!auth.currentUser) {
+        console.error('❌ User not authenticated')
+        throw new Error('User not authenticated')
+      }
+
+      // Create a new game room in Firestore
+      const gameRoomsRef = collection(firestore, 'gameRooms')
+      const roomRef = doc(gameRoomsRef)
+      const newRoomData = {
+        ...gameRoom,
+        id: roomRef.id, // Update with generated ID
+        gameState: initializeGameState(gameRoom.settings.formation || getDefaultFormation())
+      }
+      await setDoc(roomRef, newRoomData)
+
+      // Update the current room
+      currentRoom.value = {
+        ...newRoomData,
+        gameState: newRoomData.gameState
+      }
+
+      console.log('✅ Game room created with ID:', roomRef.id)
+      return roomRef.id
+    } catch (error) {
+      console.error('❌ Error creating game room:', error)
+      throw error
+    }
+  }
+
+  async function findMatch(preferences: { mode: 'timed' | 'race' | 'gap', duration?: number, goalTarget?: number, goalGap?: number }): Promise<string> {
     console.error('🚨 DEBUGGING: findMatch CALLED with preferences:', preferences)
     try {
       if (!auth.currentUser?.phoneNumber) {
@@ -158,8 +200,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         timestamp: Date.now(),
         preferences: {
           mode: preferences.mode,
-          duration: preferences.duration,
-          goalTarget: preferences.goalTarget
+          ...(preferences.duration && { duration: preferences.duration }),
+          ...(preferences.goalTarget && { goalTarget: preferences.goalTarget }),
+          ...(preferences.goalGap && { goalGap: preferences.goalGap })
         }
       }
 
@@ -208,7 +251,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
           
           // Clear the match data after joining
           await set(matchRef, null)
-          router.push(`/game/${roomId}`)
+          return match.roomId
         }
       })
 
@@ -237,6 +280,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       matchmakingStatus.value = 'idle'
       throw e
     }
+    
+    // This is a fallback to satisfy TypeScript
+    return ''
   }
 
   async function joinRoom(roomId: string) {
@@ -344,8 +390,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
       
       // Prepare the update object with only the fields that need to change
+      const gameState = getGameState() // Use safe getter
       const updateData: Record<string, any> = {
-        'gameState.board': currentRoom.value.gameState.board, // Updated board state
+        'gameState.board': gameState.board, // Updated board state
         'gameState.currentTurn': getNextTurnPlayer(),
         'gameState.lastMove': { from, to },
         'gameState.timestamp': Date.now(),
@@ -400,6 +447,8 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     findMatch,
     joinRoom,
     makeMove,
-    leaveRoom
+    getNextTurnPlayer,
+    leaveRoom,
+    createGameRoom,
   }
 })

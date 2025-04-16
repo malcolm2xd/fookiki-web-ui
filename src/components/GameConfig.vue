@@ -41,14 +41,14 @@
           </div>
         </button>
         <button 
-          class="opponent-button disabled"
-          disabled
-          title="Coming soon!"
+          class="opponent-button"
+          @click="selectOpponent('same_screen_online')"
+          :class="{ active: selectedOpponent === 'same_screen_online' }"
         >
-          <div class="opponent-icon">🤖</div>
+          <div class="opponent-icon">🌐👥</div>
           <div class="opponent-info">
-            <h3>Computer</h3>
-            <p>Play against AI (Coming soon)</p>
+            <h3>Online Same Screen</h3>
+            <p>Play with a friend online on the same screen</p>
           </div>
         </button>
 
@@ -208,7 +208,9 @@ import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
 import { useGameRoomStore } from '@/stores/gameRoom'
-import type { GameMode } from '@/types/game'
+import { GameRoom, MatchRequest, GamePlayer, GameConfig } from '@/types/game'
+
+type GameMode = 'timed' | 'race' | 'gap' | 'infinite'
 import FormationSelector from './FormationSelector.vue'
 
 const router = useRouter()
@@ -216,7 +218,7 @@ const authStore = useAuthStore()
 
 const gameStore = useGameStore()
 const gameRoomStore = useGameRoomStore()
-type OpponentType = 'local' | 'ai' | 'online'
+type OpponentType = 'local' | 'ai' | 'online' | 'same_screen_online'
 const selectedOpponent = ref<OpponentType>('online')
 const displayName = ref('Player')
 const phoneNumber = ref('')
@@ -253,7 +255,7 @@ const goalCounts = [3, 5, 7, 10] // for race mode
 const goalGaps = [2, 3, 4, 5] // for gap mode
 const turnDurations = [5, 10, 15, 20]
 
-function selectOpponent(type: 'local' | 'ai' | 'online') {
+function selectOpponent(type: OpponentType) {
   selectedOpponent.value = type
 }
 
@@ -288,7 +290,67 @@ function updateTurnTimer() {
 async function startGame() {
   console.log('Starting game...')
   
-  if (selectedOpponent.value === 'online') {
+  const opponent = selectedOpponent.value
+  
+  if (opponent === 'same_screen_online') {
+    try {
+      // Validate game mode
+      if (selectedMode.value === 'infinite') {
+        throw new Error('Infinite mode is not supported for online play')
+      }
+
+      // Create a game room for same-screen online mode
+      const gameRoom: GameRoom = {
+        id: '', // Firebase will generate this
+        status: 'waiting',
+        players: {
+          [authStore.user?.uid || '']: {
+            uid: authStore.user?.uid || '',
+            phoneNumber: authStore.user?.phoneNumber || '',
+            displayName: displayName.value,
+            color: 'blue', // First player is blue
+            ready: true,
+            score: 0
+          }
+        },
+        settings: {
+          mode: selectedMode.value,
+          ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+          ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value }),
+          ...(selectedMode.value === 'gap' && { goalGap: selectedGap.value }),
+          formation: gameStore.gameConfig.formation
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+
+      // Update game configuration
+      gameStore.gameConfig = {
+        opponent: selectedOpponent.value === 'same_screen_online' ? 'online' : selectedOpponent.value,
+        mode: selectedMode.value,
+        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
+        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
+        goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
+        formation: gameStore.gameConfig.formation
+      }
+
+      // Set timer and game configurations
+      switch (selectedMode.value) {
+        case 'timed':
+          gameStore.timerConfig.gameDuration = selectedDuration.value
+          break
+      }
+
+      // Create game room
+      const roomId = await gameRoomStore.createGameRoom(gameRoom)
+
+      // Navigate to room
+      router.push(`/game/${roomId}`)
+    } catch (error) {
+      console.error('Same screen online game setup error:', error)
+      // Handle error (show toast, etc)
+    }
+  } else if (opponent === 'online') {
     try {
       // Start matchmaking
       // Only timed and race modes are supported for online play
@@ -296,18 +358,40 @@ async function startGame() {
         throw new Error('Only timed and race modes are supported for online play')
       }
       
+      // Update game configuration
+      gameStore.gameConfig = {
+        opponent: 'online',
+        mode: selectedMode.value,
+        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
+        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
+        goalGap: 0,
+        formation: gameStore.gameConfig.formation
+      }
+
+      // Set timer
+      if (selectedMode.value === 'timed') {
+        gameStore.timerConfig.gameDuration = selectedDuration.value
+      }
+
+      // Matchmaking
       await gameRoomStore.findMatch({
         mode: selectedMode.value,
-        duration: selectedMode.value === 'timed' ? selectedDuration.value : undefined,
-        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : undefined
-      } as { mode: 'timed' | 'race', duration?: number, goalTarget?: number })
-      router.push('/room')
+        ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+        ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
+      })
+      const matchRoomId = await gameRoomStore.findMatch({
+        mode: selectedMode.value,
+        ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+        ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
+      })
+      router.push(`/game/${matchRoomId}`)
     } catch (error) {
-      console.error('Failed to find match:', error)
+      console.error('Matchmaking error:', error)
+      // Handle error (show toast, etc)
     }
   } else {
     // Local game
-    gameStore.gameConfig.opponent = selectedOpponent.value
+    gameStore.gameConfig.opponent = opponent
     gameStore.gameConfig.mode = selectedMode.value
 
     switch (selectedMode.value) {
