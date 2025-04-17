@@ -206,6 +206,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { FORMATIONS } from '@/types/formations'
 import { useAuthStore } from '@/stores/auth'
 import { useGameRoomStore } from '@/stores/gameRoom'
 import { GameRoom, MatchRequest, GamePlayer, GameConfig } from '@/types/game'
@@ -318,7 +319,9 @@ async function startGame() {
           ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
           ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value }),
           ...(selectedMode.value === 'gap' && { goalGap: selectedGap.value }),
-          formation: gameStore.gameConfig.formation
+          formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
         },
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -331,7 +334,9 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
-        formation: gameStore.gameConfig.formation
+        formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
       }
 
       // Set timer and game configurations
@@ -365,7 +370,9 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: 0,
-        formation: gameStore.gameConfig.formation
+        formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
       }
 
       // Set timer

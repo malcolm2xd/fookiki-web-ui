@@ -3,9 +3,13 @@ import { ref, computed } from 'vue'
 import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
+import { FORMATIONS } from '@/types/formations'
 import { useRouter } from 'vue-router'
-import type { GameRoom, MatchRequest, Formation } from '@/types/game'
-import { FORMATIONS } from '../types/formations'
+import type { GameRoom, MatchRequest } from '@/types/game'
+import type { Formation } from '@/types/formations'
+import { useGameStore } from './game'
+import { createPlayer } from './game'
+import type { Team } from './game'
 import { initializeGameState } from '@/utils/gameInitializer'
 
 export const useGameRoomStore = defineStore('gameRoom', () => {
@@ -126,10 +130,10 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   })
   const boardState = computed(() => {
     if (!currentRoom.value?.gameState) return Array(8).fill(null).map(() => Array(8).fill(null))
-    
+
     // Convert complex board object to 2D number array
     const board = Array(8).fill(null).map(() => Array(8).fill(null))
-    
+
     // Helper function to place pieces
     const placePieces = (color: 'blue' | 'red', pieces: { G: string[], D: string[], M: string[], F: string[] }) => {
       const pieceTypes = { G: 1, D: 2, M: 3, F: 4 }
@@ -140,13 +144,13 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         })
       })
     }
-    
+
     const gameState = currentRoom.value.gameState
     if (gameState?.board?.blue && gameState?.board?.red) {
       placePieces('blue', gameState.board.blue)
       placePieces('red', gameState.board.red)
     }
-    
+
     return board
   })
 
@@ -175,6 +179,84 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       console.log('✅ Game room created with ID:', roomRef.id)
+
+      // Set up game store data
+      const gameStore = useGameStore()
+      gameStore.$reset() // Reset the store to initial state
+      // Find the default formation
+      // Robust formation selection
+      const defaultFormation = FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
+      let selectedFormation = gameRoom.settings.formation
+
+      // Handle numeric formation selection (convert index to name)
+      if (typeof selectedFormation === 'number') {
+        selectedFormation = FORMATIONS[selectedFormation]?.name || defaultFormation
+      }
+
+      const formationConfig = FORMATIONS.find(f => f.name === selectedFormation) || 
+                               FORMATIONS.find(f => f.default) || 
+                               FORMATIONS[0]
+      
+      console.log('🏆 Detailed Formation Selection:', {
+        gameRoomFormation: gameRoom.settings.formation,
+        gameRoomSettings: gameRoom.settings,
+        defaultFormation,
+        selectedFormation,
+        formationConfig: formationConfig.name,
+        availableFormations: FORMATIONS.map(f => f.name),
+        formationConfigDetails: formationConfig
+      })
+      
+      console.log('🧩 Player Creation Debug:', {
+        playersCount: Object.entries(gameRoom.players).length,
+        playerData: gameRoom.players
+      })
+
+      // Ensure selectedFormation is a string name
+      const safeSelectedFormation = typeof selectedFormation === 'number' 
+        ? FORMATIONS[selectedFormation]?.name || FORMATIONS[0].name 
+        : selectedFormation
+
+      const players = Object.entries(gameRoom.players).length > 0
+        ? Object.entries(gameRoom.players).map(([uid, playerData]) => {
+          const playerColor = (playerData.color ?? 'blue') as Team
+          const captainPosition = (formationConfig.captains as Record<Team, string>)[playerColor]
+          return createPlayer(
+            playerColor,
+            'midfielder', // Default role
+            captainPosition,
+            safeSelectedFormation
+          )
+        })
+        : [
+          createPlayer('blue', 'midfielder', 
+            formationConfig.captains.blue, 
+            safeSelectedFormation
+          ),
+          createPlayer('red', 'midfielder', 
+            formationConfig.captains.red, 
+            safeSelectedFormation
+          )
+        ]
+      
+      console.log('🚀 Created Players:', players)
+
+      gameStore.$patch({
+        gameConfig: {
+          opponent: Object.keys(gameRoom.players).length > 1 ? 'online' : 'local',
+          mode: gameRoom.settings.mode,
+          duration: gameRoom.settings.duration || 0,
+          goalTarget: gameRoom.settings.goalTarget || 0,
+          goalGap: gameRoom.settings.goalGap || 0,
+          formation: selectedFormation
+        },
+        timerConfig: {
+          ...(gameRoom.settings.mode === 'timed' && { gameDuration: gameRoom.settings.duration || 0 })
+        },
+        players: players,
+        currentTeam: players[0]?.team || 'blue'
+      })
+
       return roomRef.id
     } catch (error) {
       console.error('❌ Error creating game room:', error)
@@ -183,106 +265,111 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   }
 
   async function findMatch(preferences: { mode: 'timed' | 'race' | 'gap', duration?: number, goalTarget?: number, goalGap?: number }): Promise<string> {
-    console.error('🚨 DEBUGGING: findMatch CALLED with preferences:', preferences)
-    try {
-      if (!auth.currentUser?.phoneNumber) {
-        console.error('❌ User not authenticated')
-        throw new Error('User not authenticated')
-      }
-      
-      matchmakingStatus.value = 'searching'
-      error.value = null
-
-      // Create base request with required fields
-      const request: MatchRequest = {
-        uid: auth.currentUser.uid,
-        phoneNumber: auth.currentUser.phoneNumber,
-        timestamp: Date.now(),
-        preferences: {
-          mode: preferences.mode,
-          ...(preferences.duration && { duration: preferences.duration }),
-          ...(preferences.goalTarget && { goalTarget: preferences.goalTarget }),
-          ...(preferences.goalGap && { goalGap: preferences.goalGap })
+    return new Promise(async (resolve, reject) => {
+      console.error('🚨 DEBUGGING: findMatch CALLED with preferences:', preferences)
+      try {
+        if (!auth.currentUser?.phoneNumber) {
+          console.error('❌ User not authenticated')
+          throw new Error('User not authenticated')
         }
-      }
 
-      console.error('🚨 DEBUGGING: Matchmaking request created:', JSON.stringify(request, null, 2))
+        matchmakingStatus.value = 'searching'
+        error.value = null
 
-      // Remove undefined values
-      if (request.preferences.duration === undefined) {
-        delete request.preferences.duration
-      }
-      
-      if (request.preferences.goalTarget === undefined) {
-        delete request.preferences.goalTarget
-      }
-
-      // Create a new request in the matchmaking queue
-      console.log('📝 Creating matchmaking request...')
-      const queueRef = dbRef(db, 'matchmaking')
-      const newRequestRef = await push(queueRef, request)
-      console.log('✅ Request registered with ID:', newRequestRef.key)
-
-      // Listen for match
-      console.log('👀 Listening for match at:', `matches/${auth.currentUser.uid}`)
-      const matchRef = dbRef(db, `matches/${auth.currentUser.uid}`)
-      console.log('🔍 Setting up match listener at:', matchRef.toString())
-      
-      // First, clear any existing match data
-      await set(matchRef, null)
-      
-      const unsubscribe = onValue(matchRef, async (snapshot) => {
-        const match = snapshot.val()
-        console.log('📨 Received match update:', match)
-        
-        if (match === null) {
-          console.log('⏳ Waiting for match...')
-          return
+        // Create base request with required fields
+        const request: MatchRequest = {
+          uid: auth.currentUser.uid,
+          phoneNumber: auth.currentUser.phoneNumber,
+          timestamp: Date.now(),
+          preferences: {
+            mode: preferences.mode,
+            ...(preferences.duration && { duration: preferences.duration }),
+            ...(preferences.goalTarget && { goalTarget: preferences.goalTarget }),
+            ...(preferences.goalGap && { goalGap: preferences.goalGap })
+          }
         }
-        
-        if (match?.roomId) {
-          console.log('🎯 Match found! Room ID:', match.roomId)
-          // Found a match, clean up listener
+
+        console.error('🚨 DEBUGGING: Matchmaking request created:', JSON.stringify(request, null, 2))
+
+        // Remove undefined values
+        if (request.preferences.duration === undefined) {
+          delete request.preferences.duration
+        }
+
+        if (request.preferences.goalTarget === undefined) {
+          delete request.preferences.goalTarget
+        }
+
+        // Create a new request in the matchmaking queue
+        console.log('📝 Creating matchmaking request...')
+        const queueRef = dbRef(db, 'matchmaking')
+        const newRequestRef = await push(queueRef, request)
+        console.log('✅ Request registered with ID:', newRequestRef.key)
+
+        // Listen for match
+        console.log('👀 Listening for match at:', `matches/${auth.currentUser.uid}`)
+        const matchRef = dbRef(db, `matches/${auth.currentUser.uid}`)
+        console.log('🔍 Setting up match listener at:', matchRef.toString())
+
+        // First, clear any existing match data
+        await set(matchRef, null)
+
+        const unsubscribe = onValue(matchRef, async (snapshot) => {
+          const match = snapshot.val()
+          console.log('📨 Received match update:', match)
+
+          if (match === null) {
+            console.log('⏳ Waiting for match...')
+            return
+          }
+
+          if (match?.roomId) {
+            console.log('★ Match found! Room ID:', match.roomId)
+            // Found a match, clean up listener
+            unsubscribe()
+
+            console.log('✨ Successfully joined room:', match.roomId)
+
+            // Attempt to join the room
+            await joinRoom(match.roomId)
+
+            // Clear the match data after joining
+            await set(matchRef, null)
+            resolve(match.roomId)
+          } else {
+            console.log('❗ Match found without room ID, waiting...')
+          }
+        })
+
+        // Clean up if component is unmounted
+        console.log('🔄 Setting up cleanup for page unload...')
+        const cleanup = async () => {
+          console.log('🗑 Cleaning up matchmaking...')
           unsubscribe()
-          
-          console.log('🚪 Joining room...')
-          const roomId = await joinRoom(match.roomId)
-          console.log('✨ Successfully joined room:', roomId)
-          
-          // Clear the match data after joining
+          await set(newRequestRef, null)
           await set(matchRef, null)
-          return match.roomId
+          matchmakingStatus.value = 'idle'
         }
-      })
 
-      // Clean up if component is unmounted
-      console.log('🔄 Setting up cleanup for page unload...')
-      const cleanup = async () => {
-        console.log('🗑 Cleaning up matchmaking...')
-        unsubscribe()
-        await set(newRequestRef, null)
-        await set(matchRef, null)
+        // Set up cleanup for page unload
+        window.addEventListener('beforeunload', cleanup)
+
+        // Set up cleanup for errors
+        window.addEventListener('error', async () => {
+          unsubscribe()
+          await set(newRequestRef, null)
+          await set(matchRef, null)
+        })
+      } catch (e) {
+        console.error('❌ Matchmaking error:', e)
+        error.value = (e as Error).message
         matchmakingStatus.value = 'idle'
+        throw e
       }
 
-      // Set up cleanup for page unload
-      window.addEventListener('beforeunload', cleanup)
-
-      // Set up cleanup for errors
-      window.addEventListener('error', async () => {
-        unsubscribe()
-        await set(newRequestRef, null)
-        await set(matchRef, null)
-      })
-    } catch (e) {
-      console.error('❌ Matchmaking error:', e)
-      error.value = (e as Error).message
-      matchmakingStatus.value = 'idle'
-      throw e
-    }
-    
-    // This is a fallback to satisfy TypeScript
-    return ''
+      // This is a fallback to satisfy TypeScript
+      return ''
+    })
   }
 
   async function joinRoom(roomId: string) {
@@ -359,11 +446,11 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const unsubscribe = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
           const updatedRoomData = doc.data() as GameRoom
-          
+
           // Ensure the room data has an ID
-          const roomWithId = { 
-            ...updatedRoomData, 
-            id: doc.id 
+          const roomWithId = {
+            ...updatedRoomData,
+            id: doc.id
           }
 
           // Update the current room
@@ -386,9 +473,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   async function makeMove(from: [number, number], to: [number, number]) {
     try {
       if (!currentRoom.value || !auth.currentUser || !isMyTurn.value) return
-      
+
       const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
-      
+
       // Prepare the update object with only the fields that need to change
       const gameState = getGameState() // Use safe getter
       const updateData: Record<string, any> = {
@@ -408,7 +495,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   function getNextTurnPlayer(): string {
     if (!currentRoom.value || !auth.currentUser) return ''
-    
+
     const playerIds = Object.keys(currentRoom.value.players)
     const currentIndex = playerIds.indexOf(auth.currentUser.uid)
     return playerIds[(currentIndex + 1) % playerIds.length]
@@ -436,13 +523,13 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     currentRoom,
     matchmakingStatus,
     error,
-    
+
     // Getters
     isInRoom,
     isMyTurn,
     myScore,
     boardState,
-    
+
     // Actions
     findMatch,
     joinRoom,

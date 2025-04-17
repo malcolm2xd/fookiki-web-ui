@@ -48,15 +48,37 @@ function parsePosition(coord: string): Position {
 }
 
 // Helper function to create a player
-function createPlayer(team: Team, role: PlayerRole, positionStr: string, formationName: string): Player {
-  const currentFormation = FORMATIONS.find(f => f.name === formationName)
+export function createPlayer(team: Team, role: PlayerRole, positionStr: string, formationName: string): Player {
+  // Robust formation name handling
+  let resolvedFormationName = formationName
+
+  // If formationName is a number or numeric string, convert to formation name
+  if (!isNaN(Number(formationName))) {
+    const formationIndex = Number(formationName)
+    resolvedFormationName = FORMATIONS[formationIndex]?.name || FORMATIONS[0].name
+  }
+
+  console.log('🏃 Creating Player Debug:', {
+    team,
+    role,
+    positionStr,
+    originalFormationName: formationName,
+    resolvedFormationName,
+    availableFormations: FORMATIONS.map(f => f.name)
+  })
+
+  const currentFormation = FORMATIONS.find(f => f.name === resolvedFormationName)
   if (!currentFormation) {
-    throw new Error(`Formation ${formationName} not found`)
+    console.error(`❌ Formation ${resolvedFormationName} not found`, {
+      resolvedFormationName,
+      availableFormations: FORMATIONS.map(f => f.name)
+    })
+    throw new Error(`Formation ${resolvedFormationName} not found. Available formations: ${FORMATIONS.map(f => f.name).join(', ')}`)
   }
 
   const isCaptain = positionStr === currentFormation.captains[team]
 
-  return {
+  const player = {
     id: `${team}-${role}-${positionStr}`,
     team,
     role,
@@ -64,6 +86,9 @@ function createPlayer(team: Team, role: PlayerRole, positionStr: string, formati
     initialPosition: { ...parsePosition(positionStr) },
     isCaptain
   }
+
+  console.log('✅ Player Created:', player)
+  return player
 }
 
 export const useGameStore = defineStore('game', {
