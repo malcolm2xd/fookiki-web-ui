@@ -17,7 +17,10 @@
       <GameState class="game-state" />
       <button class="help-button" @click="showHelp = true">
         <span class="help-icon">?</span>
-        Help
+      </button>
+      <button class="exit-button" @click="confirmExit">
+        <span class="exit-icon">✕</span>
+        Exit
       </button>
     </div>
     <GameHelp :is-visible="showHelp" @close="showHelp = false" />
@@ -273,6 +276,17 @@ export default defineComponent({
       router.push('/lobby')
     }
 
+    const confirmExit = () => {
+      // Confirm before exiting the game
+      const confirmed = window.confirm('Are you sure you want to exit the game? Your progress will be lost.')
+      if (confirmed) {
+        // Optional: Add game cleanup logic here
+        gameStore.$reset() // Reset game store
+        gameRoomStore.leaveRoom() // Leave the current game room
+        router.push('/lobby')
+      }
+    }
+
     const showHelp = ref(false)
 
     return {
@@ -292,6 +306,7 @@ export default defineComponent({
       roomError,
       isRoomLoading,
       returnToLobby,
+      confirmExit,
       showHelp
     }
   }
@@ -887,34 +902,49 @@ export default defineComponent({
   }
 }
 
-.help-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background-color: #1976D2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-
-.help-button:hover {
-  background-color: #1565C0;
-}
-
-.help-icon {
-  width: 24px;
-  height: 24px;
-  background-color: white;
-  color: #1976D2;
-  border-radius: 50%;
+.help-button, .exit-button {
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  /* color: white; */
+  padding: 0.5rem;
+  border-radius: 5%;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.help-button:hover, .exit-button:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  /* transform: scale(1.05); */
+}
+
+.exit-button {
+  margin-left: 0.5rem;
+  background-color: rgba(255, 0, 0, 0.3);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+
+.exit-button:hover {
+  background-color: rgba(255, 0, 0, 0.4);
+}
+
+.help-icon {
+  font-size: 1.5rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   font-weight: bold;
-  font-size: 1.2rem;
+  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 </style>

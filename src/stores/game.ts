@@ -881,7 +881,7 @@ export const useGameStore = defineStore('game', {
         if (this.timerConfig.enabled) {
           this.startTurnTimer()
         }
-        alert('Scores are tied! Starting extra time (2 minutes) with 4-second turns!')
+        // alert('Scores are tied! Starting extra time (2 minutes) with 4-second turns!')
         return
       }
 
@@ -896,7 +896,7 @@ export const useGameStore = defineStore('game', {
       }
       
       this.gamePhase = 'GAME_OVER'
-      alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'It\'s a'} ${this.winner ? 'team wins!' : 'draw!'}`)
+      // alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'It\'s a'} ${this.winner ? 'team wins!' : 'draw!'}`)
       
       // Reset the game after a short delay
       setTimeout(() => {
