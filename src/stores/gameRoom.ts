@@ -3,14 +3,56 @@ import { ref, computed } from 'vue'
 import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
-import { FORMATIONS } from '@/types/formations'
 import { useRouter } from 'vue-router'
-import type { GameRoom, MatchRequest } from '@/types/game'
+import type { GameRoom, MatchRequest, Team, Position, Player, PlayerRole } from '@/types/game'
 import type { Formation } from '@/types/formations'
 import { useGameStore } from './game'
-import { createPlayer } from './game'
-import type { Team } from './game'
+import { createPlayer, parsePosition } from './game'
 import { initializeGameState } from '@/utils/gameInitializer'
+import { FORMATIONS } from '@/types/formations'
+
+// Utility functions for game state management
+function getAdjacentPlayers(players: Player[], position: Position): Player[] {
+  return players.filter(player => {
+    const rowDiff = Math.abs(player.position.row - position.row)
+    const colDiff = Math.abs(player.position.col - position.col)
+    return (rowDiff <= 1 && colDiff <= 1)
+  })
+}
+
+function getBallMoves(player: Player, ballPosition: Position): Position[] {
+  const moves: Position[] = []
+  const { row, col } = ballPosition
+
+  // Implement movement logic for different roles
+  switch (player.role) {
+    case 'goalkeeper':
+      // Goalkeeper limited movement
+      break
+    case 'defender':
+      // Defender movement logic
+      break
+    case 'midfielder':
+      // Midfielder can move more freely
+      break
+    case 'forward':
+      // Forward has more aggressive movement
+      break
+  }
+
+  return moves
+}
+
+function checkGoal(ballPosition: Position): 'blue' | 'red' | null {
+  if (ballPosition.row === -1) return 'blue'
+  if (ballPosition.row === 16) return 'red'
+  return null
+}
+
+function endTurn(currentTeam: Team): Team {
+  return currentTeam === 'blue' ? 'red' : 'blue'
+}
+
 
 export const useGameRoomStore = defineStore('gameRoom', () => {
   // Initialize router
@@ -20,6 +62,18 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   const currentRoom = ref<GameRoom | null>(null)
   const matchmakingStatus = ref<'idle' | 'searching' | 'joining' | 'creating'>('idle')
   const error = ref<string | null>(null)
+
+  // Game state management
+  const gamePhase = ref<'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER'>('BALL_MOVEMENT')
+  const currentTeam = ref<Team>('blue')
+  const ballPosition = ref<Position>({ row: 8, col: 5 })
+  const selectedPlayerId = ref<string | null>(null)
+  const isBallSelected = ref(false)
+  const validMoves = ref<Position[]>([])  
+  const isFirstMove = ref(true)
+  const score = ref({ blue: 0, red: 0 })
+  const winner = ref<Team | null>(null)
+  const canCaptainMoveAgain = ref(false)
 
   // Utility function to parse board
   function parseBoard(board: number[][] | string): number[][] {
@@ -116,6 +170,29 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       },
       board: initialBoard
     }
+  }
+  function getBallMoves(player: Player): Position[] {
+    // Implement ball movement logic similar to single-player game
+    const moves: Position[] = []
+    const { row, col } = ballPosition.value
+
+    // Implement movement logic for different roles
+    switch (player.role) {
+      case 'goalkeeper':
+        // Goalkeeper limited movement
+        break
+      case 'defender':
+        // Defender movement logic
+        break
+      case 'midfielder':
+        // Midfielder can move more freely
+        break
+      case 'forward':
+        // Forward has more aggressive movement
+        break
+    }
+
+    return moves
   }
 
   // Getters
@@ -215,47 +292,35 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       // Ensure selectedFormation is a string name
       const safeSelectedFormation = typeof selectedFormation === 'number' 
         ? FORMATIONS[selectedFormation]?.name || FORMATIONS[0].name 
-        : selectedFormation
+        : (selectedFormation || FORMATIONS[0].name)
 
-      const players = Object.entries(gameRoom.players).length > 0
-        ? Object.entries(gameRoom.players).map(([uid, playerData]) => {
-          const playerColor = (playerData.color ?? 'blue') as Team
-          const captainPosition = (formationConfig.captains as Record<Team, string>)[playerColor]
-          return createPlayer(
-            playerColor,
-            'midfielder', // Default role
-            captainPosition,
-            safeSelectedFormation
-          )
-        })
-        : [
-          createPlayer('blue', 'midfielder', 
-            formationConfig.captains.blue, 
-            safeSelectedFormation
-          ),
-          createPlayer('red', 'midfielder', 
-            formationConfig.captains.red, 
-            safeSelectedFormation
-          )
-        ]
+      // Use the game store to initialize players
+      const store = useGameStore()
       
-      console.log('🚀 Created Players:', players)
+      // Set the formation in the game store
+      store.setFormation(safeSelectedFormation)
+      
+      // Initialize the game with the selected formation
+      store.initializeGame()
 
-      gameStore.$patch({
+      // Patch game configuration
+      store.$patch({
         gameConfig: {
           opponent: Object.keys(gameRoom.players).length > 1 ? 'online' : 'local',
           mode: gameRoom.settings.mode,
           duration: gameRoom.settings.duration || 0,
           goalTarget: gameRoom.settings.goalTarget || 0,
           goalGap: gameRoom.settings.goalGap || 0,
-          formation: selectedFormation
+          formation: safeSelectedFormation
         },
         timerConfig: {
           ...(gameRoom.settings.mode === 'timed' && { gameDuration: gameRoom.settings.duration || 0 })
-        },
-        players: players,
-        currentTeam: players[0]?.team || 'blue'
+        }
       })
+
+      console.log('🚀 Initialized Players:', store.players)
+      //   }
+      // })
 
       return roomRef.id
     } catch (error) {
@@ -523,6 +588,16 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     currentRoom,
     matchmakingStatus,
     error,
+    gamePhase,
+    currentTeam,
+    ballPosition,
+    selectedPlayerId,
+    isBallSelected,
+    validMoves,
+    isFirstMove,
+    score,
+    winner,
+    canCaptainMoveAgain,
 
     // Getters
     isInRoom,
@@ -537,5 +612,11 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     getNextTurnPlayer,
     leaveRoom,
     createGameRoom,
+
+    // Utility methods
+    getAdjacentPlayers: () => getAdjacentPlayers,
+    getBallMoves: () => getBallMoves,
+    checkGoal: () => checkGoal,
+    endTurn: () => endTurn
   }
 })
