@@ -14,6 +14,23 @@
 
   <div v-else class="game-container">
     <div class="game-controls">
+      <div class="player-info-section" v-if="gameRoomStore.currentRoom">
+        <div class="player-details">
+          <div v-for="(player, uid) in gameRoomStore.currentRoom.players" :key="uid" class="player-card" :class="{
+            'player-blue': player.color === 'blue',
+            'player-red': player.color === 'red',
+            'current-player': player.phoneNumber === auth.currentUser.phoneNumber
+          }">
+            <div class="player-info">
+              <span class="player-phone"
+                :class="{ 'current-player-text': player.phoneNumber === auth.currentUser.phoneNumber }">
+                {{ player.phoneNumber === auth.currentUser.phoneNumber ? "👉" : "" }} {{ player.phoneNumber }} : {{
+                player.color }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
       <GameState class="game-state" />
       <button class="help-button" @click="showHelp = true">
         <span class="help-icon">?</span>
@@ -25,25 +42,22 @@
     </div>
     <GameHelp :is-visible="showHelp" @close="showHelp = false" />
     <CelebrationModal />
+
     <div class="game-board-wrapper">
       <div class="game-board">
         <div class="playing-field">
           <!-- Row 1: Column Labels (A-J) -->
-          <div v-for="col in totalDimensions.totalCols" :key="`col-${col}`" class="board-cell column-label">
-            {{ col === 1 || col === totalDimensions.totalCols ? '' : String.fromCharCode(64 + col - 1) }}
+          <div v-for="(col, index) in Array.from({ length: totalDimensions.totalCols }, (_, i) => i + 1)"
+            :key="`col-${col}`" class="board-cell column-label">
+            {{ (col === 1 || col === totalDimensions.totalCols) ? '' : String.fromCharCode(64 + col - 1) }}
           </div>
 
           <!-- Row 3: Top Goal -->
           <div v-for="col in totalDimensions.totalCols" :key="`goal-top-${col}`">
-            <div 
-              v-if="col >= 5 && col <= 8" 
-              class="goal-cell goal-cell-blue"
-              :class="{ 
-                'valid-move': isValidMove(-1, col - 2),
-                'clickable': isValidMove(-1, col - 2)
-              }"
-              @click="handleCellClick(-1, col - 2)"
-            >
+            <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-blue" :class="{
+              'valid-move': isValidMove(-1, col - 2),
+              'clickable': isValidMove(-1, col - 2)
+            }" @click="handleCellClick(-1, col - 2)">
               <div v-if="isBallAtPosition(-1, col - 2)" class="ball">⚽</div>
             </div>
           </div>
@@ -54,55 +68,41 @@
             <div class="board-cell row-label">{{ row }}</div>
 
             <!-- Playing field cells -->
-            <div 
-              v-for="col in gridConfig.playingField.cols" 
-              :key="`cell-${row}-${col}`"
-              class="board-cell"
-              :class="{
-                'field-border-left': col === 1,
-                'field-border-right': col === gridConfig.playingField.cols,
-                'field-border-top': row === 1,
-                'field-border-bottom': row === gridConfig.playingField.rows,
-                'center-line': row === Math.floor(gridConfig.playingField.rows / 2),
-                'penalty-border-left': col === 3 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
-                'penalty-border-right': col === 8 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
-                'penalty-border-top': row === 1 && col >= 3 && col <= 8,
-                'penalty-border-bottom': (row === 4 && col >= 3 && col <= 8) ||
-                                       (row === gridConfig.playingField.rows - 4 && col >= 3 && col <= 8),
-                'field-corner-tl': col === 1 && row === 1,
-                'field-corner-tr': col === gridConfig.playingField.cols && row === 1,
-                'field-corner-bl': col === 1 && row === gridConfig.playingField.rows,
-                'field-corner-br': col === gridConfig.playingField.cols && row === gridConfig.playingField.rows,
-                'valid-move': isValidMove(row - 1, col - 1),
-                'clickable': isValidMove(row - 1, col - 1) || (getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected)
-              }"
-              @click="handleCellClick(row - 1, col - 1)"
-            >
+            <div v-for="col in gridConfig.playingField.cols" :key="`cell-${row}-${col}`" class="board-cell" :class="{
+              'field-border-left': col === 1,
+              'field-border-right': col === gridConfig.playingField.cols,
+              'field-border-top': row === 1,
+              'field-border-bottom': row === gridConfig.playingField.rows,
+              'center-line': row === Math.floor(gridConfig.playingField.rows / 2),
+              'penalty-border-left': col === 3 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
+              'penalty-border-right': col === 8 && ((row <= 4) || (row >= gridConfig.playingField.rows - 3)),
+              'penalty-border-top': row === 1 && col >= 3 && col <= 8,
+              'penalty-border-bottom': (row === 4 && col >= 3 && col <= 8) ||
+                (row === gridConfig.playingField.rows - 4 && col >= 3 && col <= 8),
+              'field-corner-tl': col === 1 && row === 1,
+              'field-corner-tr': col === gridConfig.playingField.cols && row === 1,
+              'field-corner-bl': col === 1 && row === gridConfig.playingField.rows,
+              'field-corner-br': col === gridConfig.playingField.cols && row === gridConfig.playingField.rows,
+              'valid-move': isValidMove(row - 1, col - 1),
+              'clickable': isValidMove(row - 1, col - 1) || (getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected)
+            }" @click="handleCellClick(row - 1, col - 1)">
               <!-- Player -->
-              <div 
-                v-if="getPlayerAtPosition(row - 1, col - 1)"
-                class="player"
-                :class="{
-                  'player-blue': getPlayerAtPosition(row - 1, col - 1)?.team === 'blue',
-                  'player-red': getPlayerAtPosition(row - 1, col - 1)?.team === 'red',
-                  'player-selected': getPlayerAtPosition(row - 1, col - 1)?.id === selectedPlayerId,
-                  'player-current-team': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam,
-                  'clickable': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected
-                }"
-              >
+              <div v-if="getPlayerAtPosition(row - 1, col - 1)" class="player" :class="{
+                'player-blue': getPlayerAtPosition(row - 1, col - 1)?.team === 'blue',
+                'player-red': getPlayerAtPosition(row - 1, col - 1)?.team === 'red',
+                'player-selected': getPlayerAtPosition(row - 1, col - 1)?.id === selectedPlayerId,
+                'player-current-team': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam,
+                'clickable': getPlayerAtPosition(row - 1, col - 1)?.team === currentTeam && !isFirstMove && !isBallSelected
+              }">
                 <span class="player-role">
                   {{ getPlayerAtPosition(row - 1, col - 1)?.role }}
                   <span v-if="getPlayerAtPosition(row - 1, col - 1)?.isCaptain" class="captain-star">★</span>
                 </span>
               </div>
-      
+
               <!-- Ball -->
-              <div 
-                v-if="isBallAtPosition(row - 1, col - 1)"
-                class="ball"
-                :class="{ 'selected': isBallSelected }"
-                @click="handleBallClick"
-              >⚽</div>
+              <div v-if="isBallAtPosition(row - 1, col - 1)" class="ball" :class="{ 'selected': isBallSelected }"
+                @click="handleBallClick">⚽</div>
             </div>
             <!-- Empty last column -->
             <div />
@@ -110,15 +110,10 @@
 
           <!-- Bottom Goal -->
           <div v-for="col in totalDimensions.totalCols" :key="`goal-bottom-${col}`">
-            <div 
-              v-if="col >= 5 && col <= 8" 
-              class="goal-cell goal-cell-red"
-              :class="{ 
-                'valid-move': isValidMove(16, col - 2),
-                'clickable': isValidMove(16, col - 2)
-              }"
-              @click="handleCellClick(16, col - 2)"
-            >
+            <div v-if="col >= 5 && col <= 8" class="goal-cell goal-cell-red" :class="{
+              'valid-move': isValidMove(16, col - 2),
+              'clickable': isValidMove(16, col - 2)
+            }" @click="handleCellClick(16, col - 2)">
               <div v-if="isBallAtPosition(16, col - 2)" class="ball">⚽</div>
             </div>
           </div>
@@ -134,6 +129,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useGameRoomStore } from '@/stores/gameRoom'
 import { useAuthStore } from '@/stores/auth'
+import { auth } from '@/config/firebase'
 import type { Position } from '@/types/player'
 import GameState from './GameState.vue'
 import GameHelp from './GameHelp.vue'
@@ -154,10 +150,10 @@ export default defineComponent({
     const router = useRouter()
 
     const gameId = computed(() => route.params.gameId as string)
-    const remainingTime = ref(0)
+    const remainingTime = ref<number>(0)
     const countdownTimer = ref<NodeJS.Timeout | null>(null)
     const roomError = ref<string | null>(null)
-    const isRoomLoading = ref(true)
+    const isRoomLoading = ref<boolean>(true)
 
     const startCountdown = () => {
       const startTime = gameRoomStore.currentRoom?.gameState?.startTime || Date.now()
@@ -181,6 +177,8 @@ export default defineComponent({
     }
 
     onMounted(async () => {
+      console.log("+++++++++++++++++++++++++")
+      console.log(auth)
       try {
         isRoomLoading.value = true
         roomError.value = null
@@ -232,7 +230,7 @@ export default defineComponent({
     const isFirstMove = computed(() => gameStore.isFirstMove)
 
     const getPlayerAtPosition = (row: number, col: number) => {
-      return players.value.find(p => p.position.row === row && p.position.col === col)
+      return players.value.find((p: { position: { row: number, col: number } }) => p.position.row === row && p.position.col === col)
     }
 
     const isBallAtPosition = (row: number, col: number) => {
@@ -240,7 +238,7 @@ export default defineComponent({
     }
 
     const isValidMove = (row: number, col: number) => {
-      return validMoves.value.some(move => move.row === row && move.col === col)
+      return validMoves.value.some((move: { row: number, col: number }) => move.row === row && move.col === col)
     }
 
     const handleBallClick = () => {
@@ -249,29 +247,29 @@ export default defineComponent({
 
     const handleCellClick = (row: number, col: number) => {
       const player = getPlayerAtPosition(row, col)
-      
+
       // If clicking on a non-move area, unselect
       if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
         gameStore.selectCell({ row, col })
         return
       }
-      
+
       // Only allow selecting players from the current team
       if (player && player.team !== currentTeam.value) {
         gameStore.selectCell({ row, col })
         return
       }
-      
+
       // If clicking on a player from the current team, select it
       if (player && player.team === currentTeam.value) {
         gameStore.selectCell({ row, col })
         return
       }
-      
+
       // For ball movement
       gameStore.selectCell({ row, col })
     }
-    
+
     const returnToLobby = () => {
       router.push('/lobby')
     }
@@ -290,24 +288,36 @@ export default defineComponent({
     const showHelp = ref(false)
 
     return {
+      // State
+      remainingTime,
+      showHelp,
+      gameId,
+      gameRoomStore,
+      isRoomLoading,
+      roomError,
       gridConfig,
       totalDimensions,
-      selectedPlayerId,
+      auth,
+
+      // Computed
       currentTeam,
-      getPlayerAtPosition,
-      isBallAtPosition,
-      isValidMove,
+      isFirstMove,
+      selectedPlayerId,
+      isBallSelected,
+
+      // Methods
       handleCellClick,
       handleBallClick,
-      isBallSelected,
-      isFirstMove,
-      remainingTime,
-      gameId,
-      roomError,
-      isRoomLoading,
-      returnToLobby,
       confirmExit,
-      showHelp
+      returnToLobby,
+      isValidMove,
+      getPlayerAtPosition,
+      isBallAtPosition,
+      formatTime: (seconds: number) => {
+        const minutes = Math.floor(seconds / 60)
+        const remainingSeconds = seconds % 60
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+      }
     }
   }
 })
@@ -343,12 +353,15 @@ export default defineComponent({
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background-color: transparent;  /* Changed back to transparent */
+  background-color: transparent;
+  /* Changed back to transparent */
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
-  width: min(100%, calc(90vh * 0.58)); /* 11:19 ratio */
-  height: calc(width * 1.727); /* 19:11 ratio */
+  width: min(100%, calc(90vh * 0.58));
+  /* 11:19 ratio */
+  height: calc(width * 1.727);
+  /* 19:11 ratio */
   margin: 0 auto;
   --total-rows: v-bind(totalDimensions.totalRows);
   --total-cols: v-bind(totalDimensions.totalCols);
@@ -391,7 +404,8 @@ export default defineComponent({
 }
 
 .board-cell:hover {
-  background-color: rgba(255, 255, 255, 0.1);  /* Reverted to original hover color */
+  background-color: rgba(255, 255, 255, 0.1);
+  /* Reverted to original hover color */
 }
 
 /* Center line */
@@ -404,21 +418,29 @@ export default defineComponent({
 .board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8) {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
 .board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8):hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
 /* Remove border-top only from first row cells (adjacent to blue goal) */
 .board-row:nth-child(1) .board-cell:nth-child(n+3):nth-child(-n+8) {
   border-top: none;
 }
+
 /* Top penalty area border */
-.board-row:nth-child(4) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Bottom border */
+.board-row:nth-child(4) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Bottom border */
   border-bottom: 4px solid rgba(255, 255, 255, 0.8);
 }
-.board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Left border */
+
+.board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Left border */
   border-left: 4px solid rgba(255, 255, 255, 0.8);
 }
-.board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Right border */
+
+.board-row:nth-child(n+1):nth-child(-n+4) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Right border */
   border-right: 4px solid rgba(255, 255, 255, 0.8);
 }
 
@@ -426,21 +448,29 @@ export default defineComponent({
 .board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8) {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
 .board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8):hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
 /* Remove border-bottom only from last row cells (adjacent to red goal) */
 .board-row:nth-child(16) .board-cell:nth-child(n+3):nth-child(-n+8) {
   border-bottom: none;
 }
+
 /* Bottom penalty area border */
-.board-row:nth-child(13) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Top border */
+.board-row:nth-child(13) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Top border */
   border-top: 4px solid rgba(255, 255, 255, 0.8);
 }
-.board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Left border */
+
+.board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Left border */
   border-left: 4px solid rgba(255, 255, 255, 0.8);
 }
-.board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8) {  /* Right border */
+
+.board-row:nth-child(n+13):nth-child(-n+16) .board-cell:nth-child(n+3):nth-child(-n+8) {
+  /* Right border */
   border-right: 4px solid rgba(255, 255, 255, 0.8);
 }
 
@@ -479,7 +509,7 @@ export default defineComponent({
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
   background-size: 6px 6px;
@@ -495,13 +525,13 @@ export default defineComponent({
 
 /* Make net pattern slightly darker for visibility */
 .goal-cell-blue::before {
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
 }
 
 .goal-cell-red::before {
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
 }
@@ -593,7 +623,7 @@ export default defineComponent({
   transition: opacity 0.3s ease;
 }
 
-.player[class*="player-red"] {
+.player-red {
   background-color: #D32F2F;
 }
 
@@ -715,6 +745,7 @@ export default defineComponent({
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -765,9 +796,74 @@ export default defineComponent({
     padding: 0.5rem;
   }
 
+  .player-info-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .player-details {
+    display: flex;
+    gap: 1rem;
+    max-width: 800px;
+    width: 100%;
+  }
+
+  .player-card {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .player-card.player-blue {
+    background-color: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+  }
+
+  .player-card.player-red {
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+  }
+
+  .player-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .player-name {
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .player-phone {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .player-id {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 0.25rem;
+  }
+
+  .current-player {
+    border: 2px solid #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+  }
+
+  .current-player-text {
+    font-weight: bold;
+    color: #4CAF50;
+  }
+
   .game-board {
     width: 100%;
-    height: calc(100vw * 1.727); /* 19:11 ratio */
+    height: calc(100vw * 1.727);
+    /* 19:11 ratio */
   }
 
   .grid-labels {
@@ -902,7 +998,8 @@ export default defineComponent({
   }
 }
 
-.help-button, .exit-button {
+.help-button,
+.exit-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -916,10 +1013,11 @@ export default defineComponent({
   transition: all 0.3s ease;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.help-button:hover, .exit-button:hover {
+.help-button:hover,
+.exit-button:hover {
   background-color: rgba(255, 255, 255, 0.4);
   /* transform: scale(1.05); */
 }
@@ -943,7 +1041,7 @@ export default defineComponent({
   width: 100%;
   height: 100%;
   font-weight: bold;
-  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
