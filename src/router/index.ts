@@ -3,11 +3,10 @@ import { auth } from '@/config/firebase';
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
 
 // Lazy load components
-const LoginView = () => import('@/components/LoginView.vue');
-const GameBoard = () => import('@/components/GameBoard.vue');
-const GameConfig = () => import('@/components/GameConfig.vue');
-const GameRoom = () => import('@/components/GameRoom.vue');
-const SinglePlay = () => import('@/components/SinglePlay.vue');
+const LoginView = () => import('@/views/LoginView.vue');
+const GameBoard = () => import('@/views/GameBoard.vue');
+const GameConfig = () => import('@/views/GameConfig.vue');
+const SinglePlay = () => import('@/views/SinglePlay.vue');
 
 // Auth guard - only allow authenticated users
 function requireAuth(

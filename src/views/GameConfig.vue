@@ -330,7 +330,7 @@ import { useGameRoomStore } from '@/stores/gameRoom'
 import { GameRoom, MatchRequest, GamePlayer, GameConfig } from '@/types/game'
 
 type GameMode = 'timed' | 'race' | 'gap' | 'infinite'
-import FormationSelector from './FormationSelector.vue'
+import FormationSelector from '@/components/FormationSelector.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

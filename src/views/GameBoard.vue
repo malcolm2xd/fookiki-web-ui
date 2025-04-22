@@ -130,10 +130,9 @@ import { useGameStore } from '@/stores/game'
 import { useGameRoomStore } from '@/stores/gameRoom'
 import { useAuthStore } from '@/stores/auth'
 import { auth } from '@/config/firebase'
-import type { Position } from '@/types/player'
-import GameState from './GameState.vue'
-import GameHelp from './GameHelp.vue'
-import CelebrationModal from './CelebrationModal.vue'
+import GameState from '@/components/GameState.vue'
+import GameHelp from '@/components/GameHelp.vue'
+import CelebrationModal from '@/components/CelebrationModal.vue'
 
 export default defineComponent({
   name: 'GameBoard',
