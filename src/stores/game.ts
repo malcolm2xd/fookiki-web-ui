@@ -1,42 +1,9 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { Player, Position, Team, PlayerRole, GameMode, GridConfig, GameState } from './game'
+import type { Player, Position, Team, PlayerRole, GridConfig } from './game'
 import type { Formation } from '@/types/formations'
 import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
 import { FORMATIONS } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
-
-interface FormationConfig {
-  name: string;
-  description: string;
-  positions: {
-    G: string[];  // Goalkeeper positions
-    D: string[];  // Defender positions
-    M: string[];  // Midfielder positions
-    F: string[];  // Forward positions
-  };
-  captains: {
-    blue: string;  // Position string for blue team captain (e.g., '6A')
-    red: string;   // Position string for red team captain (e.g., '11A')
-  };
-}
-
-const formations: FormationConfig[] = [
-  {
-    name: '4-4-2',
-    description: 'Balanced formation with two forwards',
-    positions: {
-      G: ['3A'],
-      D: ['4A', '4B', '4C', '4D'],
-      M: ['6A', '6B', '6C', '6D'],
-      F: ['8A', '8B']
-    },
-    captains: {
-      blue: '6A',  // Blue team captain at 6A (midfielder)
-      red: '11A'   // Red team captain at 11A (midfielder)
-    }
-  }
-]
 
 // Convert from letter-number format (e.g., '3A') to Position
 function parsePosition(coord: string): Position {

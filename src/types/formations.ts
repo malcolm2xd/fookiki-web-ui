@@ -1,16 +1,7 @@
-import type { Position } from './player'
-
-// Convert from letter-number format (e.g., '3A') to Position
-function parsePosition(coord: string): Position {
-  const col = coord.charAt(1).charCodeAt(0) - 65 // Convert A-J to 0-9
-  const row = parseInt(coord.charAt(0)) - 1 // Convert 1-16 to 0-15
-  return { row, col }
-}
-
 export interface Formation {
   name: string
   description: string
-  default: boolean
+  default?: boolean
   positions: {
     G: string[]  // 1 Goalkeeper
     D: string[]  // 4 Defenders

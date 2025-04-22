@@ -4,8 +4,7 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GamePlayer as Player, GameMode } from '@/types/game'
-import type { GameRoom } from '@/types/gameRoom'
+import type { GameRoom, BoardPlayerPosition } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
 import { FORMATIONS } from '@/types/formations'
 
@@ -16,13 +15,13 @@ export type PlayerRole = 'G' | 'D' | 'M' | 'F'
 
 // Store and utility imports
 import { useGameStore } from './game'
-import { parsePosition, createPlayer } from './game'
+import { parsePosition } from './game'
 
 // Explicitly export parsePosition
 export { parsePosition }
 
 // Utility functions for game state management
-function getAdjacentPlayers(players: Player[], position: Position): Player[] {
+function getAdjacentPlayers(players: BoardPlayerPosition[], position: Position): BoardPlayerPosition[] {
   return players.filter(player => {
     const rowDiff = Math.abs(player.position.row - position.row)
     const colDiff = Math.abs(player.position.col - position.col)
