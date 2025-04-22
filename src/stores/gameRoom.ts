@@ -488,19 +488,22 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         [auth.currentUser.uid]: playerData
       }
 
-      // Update game state if room is now full
-      const updatedGameState = playerIds.length === 1 
-        ? createInitialGameBoard(roomData.settings.formation || '0') 
-        : roomData.gameState
-
       // Update Firestore document
       await updateDoc(roomRef, {
         players: updatedPlayers,
-        gameState: updatedGameState,
+        gameState: initializeGameState(roomData.settings.formation || '0'),
         status: Object.keys(updatedPlayers).length === 2 ? 'ready' : 'waiting',
         updatedAt: Date.now()
       })
 
+      // Use the game store to initialize players
+      const store = useGameStore()
+
+      // Set the formation in the game store
+      store.setFormation(roomData.settings.formation)
+      
+      // Initialize the game with the selected formation
+      store.initializeGame()
       // Listen for room updates
       const unsubscribe = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {

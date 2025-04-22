@@ -56,147 +56,265 @@
     </div>
     
     <div class="main-config">
-      <!-- Game Modes Panel -->
-      <div class="config-panel modes-panel">
-        <h2>Game Mode</h2>
-        <div class="mode-selector">
-          <button 
-            class="mode-button"
-            @click="selectMode('timed')"
-            :class="{ active: selectedMode === 'timed' }"
-          >
-            Most Goals in Time
-          </button>
-          <button 
-            class="mode-button"
-            @click="selectMode('race')"
-            :disabled="!modeEnabled.race"
-            :class="{ 
-              active: selectedMode === 'race',
-              disabled: !modeEnabled.race 
-            }"
-            :title="modeEnabled.race ? '' : 'Coming soon!'"
-          >
-            Race to Goals
-          </button>
-          <button 
-            class="mode-button"
-            @click="selectMode('gap')"
-            :disabled="!modeEnabled.gap"
-            :class="{ 
-              active: selectedMode === 'gap',
-              disabled: !modeEnabled.gap 
-            }"
-            :title="modeEnabled.gap ? '' : 'Coming soon!'"
-          >
-            Goal Gap
-          </button>
-          <button 
-            class="mode-button"
-            @click="selectMode('infinite')"
-            :disabled="!modeEnabled.infinite"
-            :class="{ 
-              active: selectedMode === 'infinite',
-              disabled: !modeEnabled.infinite 
-            }"
-            :title="modeEnabled.infinite ? '' : 'Coming soon!'"
-          >
-            Infinite
-          </button>
-        </div>
-      </div>
-
-      <!-- Mode Settings Panel -->
+      <!-- Consolidated Settings Button -->
       <div class="config-panel settings-panel">
-        <h2>Mode Settings</h2>
-        
-        <!-- Timed Mode Settings -->
-        <div v-if="selectedMode === 'timed'" class="mode-settings">
-          <h3>Game Duration</h3>
-          <div class="duration-selector">
-            <button 
-              v-for="duration in gameDurations" 
-              :key="duration"
-              :class="{ active: selectedDuration === duration }"
-              @click="selectDuration(duration)"
-              class="setting-button"
-            >
-              {{ formatDuration(duration) }}
-            </button>
+        <button 
+          class="all-settings-btn" 
+          @click="showAllSettingsModal = true"
+        >
+          🛠️ Game Configuration
+        </button>
+      </div>
+
+      <!-- All Settings Modal -->
+      <div 
+        v-if="showAllSettingsModal" 
+        class="all-settings-modal"
+      >
+        <div class="modal-content">
+          <h2>Game Configuration</h2>
+          <button 
+            class="close-modal-btn" 
+            @click="showAllSettingsModal = false"
+          >
+            ✖️
+          </button>
+
+          <!-- Game Mode Selection -->
+          <div class="settings-section game-mode-section">
+            <h3>Game Mode</h3>
+            <div class="mode-selector">
+              <button 
+                class="mode-button"
+                @click="selectMode('timed')"
+                :class="{ active: selectedMode === 'timed' }"
+              >
+                <div class="mode-icon">⏱️</div>
+                <div class="mode-info">
+                  <h3>Timed</h3>
+                  <p>Play for a set duration</p>
+                </div>
+              </button>
+              <button 
+                class="mode-button"
+                @click="selectMode('race')"
+                :class="{ active: selectedMode === 'race' }"
+              >
+                <div class="mode-icon">🏁</div>
+                <div class="mode-info">
+                  <h3>Race</h3>
+                  <p>First to score goals wins</p>
+                </div>
+              </button>
+              <button 
+                class="mode-button"
+                @click="selectMode('gap')"
+                :class="{ active: selectedMode === 'gap' }"
+              >
+                <div class="mode-icon">📊</div>
+                <div class="mode-info">
+                  <h3>Goal Gap</h3>
+                  <p>Win by goal difference</p>
+                </div>
+              </button>
+              <button 
+                class="mode-button"
+                @click="selectMode('infinite')"
+                :class="{ active: selectedMode === 'infinite' }"
+              >
+                <div class="mode-icon">♾️</div>
+                <div class="mode-info">
+                  <h3>Infinite</h3>
+                  <p>Play without time limits</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mode-Specific Settings -->
+          <div class="settings-section mode-settings">
+            <h3>Mode Settings</h3>
+            <!-- Timed Mode Settings -->
+            <div v-if="selectedMode === 'timed'" class="duration-settings">
+              <h4>Time Duration</h4>
+              <div class="duration-selector">
+                <button 
+                  v-for="duration in [300, 600, 900]" 
+                  :key="duration"
+                  @click="selectDuration(duration)"
+                  :class="{ active: selectedDuration === duration }"
+                >
+                  {{ formatDuration(duration) }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Race Mode Settings -->
+            <div v-if="selectedMode === 'race'" class="goal-settings">
+              <h4>Goal Target</h4>
+              <div class="goal-selector">
+                <button 
+                  v-for="count in [3, 5, 7]" 
+                  :key="count"
+                  @click="selectGoalCount(count)"
+                  :class="{ active: selectedGoalCount === count }"
+                >
+                  {{ count }} Goals
+                </button>
+              </div>
+            </div>
+
+            <!-- Goal Gap Mode Settings -->
+            <div v-if="selectedMode === 'gap'" class="gap-settings">
+              <h4>Goal Gap</h4>
+              <div class="gap-selector">
+                <button 
+                  v-for="gap in [1, 2, 3]" 
+                  :key="gap"
+                  @click="selectGap(gap)"
+                  :class="{ active: selectedGap === gap }"
+                >
+                  {{ gap }} Goal Difference
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Turn Timer Settings -->
+          <div class="settings-section turn-timer-section">
+            <h3>Turn Timer</h3>
+            <div class="turn-timer-toggle">
+              <button 
+                class="open-turn-timer-modal"
+                @click="showTurnTimerModal = true"
+              >
+                🕒 Configure Turn Timer
+              </button>
+            </div>
+          </div>
+
+          <!-- Formation Selector -->
+          <div class="settings-section formation-section">
+            <h3>Formation</h3>
+            <FormationSelector />
           </div>
         </div>
+      </div>
 
-        <!-- Race Mode Settings -->
-        <div v-if="selectedMode === 'race'" class="mode-settings">
-          <h3>Goals to Win</h3>
-          <div class="goals-selector">
-            <button 
-              v-for="count in goalCounts" 
-              :key="count"
-              :class="{ active: selectedGoalCount === count }"
-              @click="selectGoalCount(count)"
-              class="setting-button"
-            >
-              {{ count }} Goals
-            </button>
+      <!-- Turn Timer Modal -->
+      <div 
+        v-if="showTurnTimerModal" 
+        class="turn-timer-modal"
+      >
+        <div class="modal-content">
+          <h2>Turn Timer Configuration</h2>
+          <button 
+            class="close-modal-btn" 
+            @click="showTurnTimerModal = false"
+          >
+            ✖️
+          </button>
+
+          <div class="timer-config">
+            <div class="timer-toggle">
+              <label class="switch">
+                <input 
+                  type="checkbox" 
+                  v-model="turnTimerEnabled"
+                  @change="updateTurnTimer"
+                >
+                <span class="slider"></span>
+              </label>
+              <span>Enable Turn Timer</span>
+            </div>
+            
+            <div class="turn-duration" v-if="turnTimerEnabled">
+              <label>Turn Duration:</label>
+              <select 
+                v-model="turnDuration" 
+                @change="updateTurnTimer"
+              >
+                <option 
+                  v-for="duration in turnDurations" 
+                  :key="duration" 
+                  :value="duration"
+                >
+                  {{ duration }} seconds
+                </option>
+              </select>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Gap Mode Settings -->
-        <div v-if="selectedMode === 'gap'" class="mode-settings">
-          <h3>Goal Difference</h3>
-          <div class="gap-selector">
-            <button 
-              v-for="gap in goalGaps" 
-              :key="gap"
-              :class="{ active: selectedGap === gap }"
-              @click="selectGap(gap)"
-              class="setting-button"
-            >
-              {{ gap }} Goals
-            </button>
+      <!-- Game Settings Modal -->
+      <div 
+        v-if="showGameSettingsModal" 
+        class="game-settings-modal"
+      >
+        <div class="modal-content">
+          <h2>Game Settings</h2>
+          <button 
+            class="close-modal-btn" 
+            @click="showGameSettingsModal = false"
+          >
+            ✖️
+          </button>
+
+          <!-- Timed Mode Settings -->
+          <div v-if="selectedMode === 'timed'" class="mode-settings">
+            <h3>Time Duration</h3>
+            <div class="duration-selector">
+              <button 
+                v-for="duration in [300, 600, 900]" 
+                :key="duration"
+                @click="selectDuration(duration)"
+                :class="{ active: selectedDuration === duration }"
+              >
+                {{ formatDuration(duration) }}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <!-- Infinite Mode has no settings -->
-        <div v-if="selectedMode === 'infinite'" class="mode-settings">
-          <p class="info-text">Play until you decide to stop!</p>
+          <!-- Race Mode Settings -->
+          <div v-if="selectedMode === 'race'" class="mode-settings">
+            <h3>Goal Target</h3>
+            <div class="goal-selector">
+              <button 
+                v-for="count in [3, 5, 7]" 
+                :key="count"
+                @click="selectGoalCount(count)"
+                :class="{ active: selectedGoalCount === count }"
+              >
+                {{ count }} Goals
+              </button>
+            </div>
+          </div>
+
+          <!-- Goal Gap Mode Settings -->
+          <div v-if="selectedMode === 'gap'" class="mode-settings">
+            <h3>Goal Gap</h3>
+            <div class="gap-selector">
+              <button 
+                v-for="gap in [1, 2, 3]" 
+                :key="gap"
+                @click="selectGap(gap)"
+                :class="{ active: selectedGap === gap }"
+              >
+                {{ gap }} Goal Difference
+              </button>
+            </div>
+          </div>
+
+          <!-- Formation Selector -->
+          <div class="formation-settings">
+            <h3>Formation</h3>
+            <FormationSelector />
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="config-section">
-      <h2>Formation</h2>
-      <FormationSelector />
-    </div>
-
-    <div class="config-section">
-      <h2>Turn Timer</h2>
-      <div class="timer-config">
-        <div class="timer-toggle">
-          <label class="switch">
-            <input 
-              type="checkbox" 
-              v-model="turnTimerEnabled"
-              @change="updateTurnTimer"
-            >
-            <span class="slider"></span>
-          </label>
-          <span>Enable Turn Timer</span>
-        </div>
-        
-        <div class="turn-duration" v-if="turnTimerEnabled">
-          <label>Turn Duration:</label>
-          <select v-model="turnDuration" @change="updateTurnTimer">
-            <option v-for="duration in turnDurations" 
-                    :key="duration" 
-                    :value="duration">
-              {{ duration }} seconds
-            </option>
-          </select>
-        </div>
-      </div>
-    </div>
 
     <button class="start-button" @click="startGame">Start Game</button>
   </div>
@@ -241,6 +359,19 @@ const selectedGoalCount = ref(5) // for race mode
 const selectedGap = ref(2) // for gap mode
 const turnTimerEnabled = ref(false)
 const turnDuration = ref(10)
+const showTurnTimerModal = ref(false)
+const turnDurations = [5, 10, 15, 20, 30, 45, 60]
+
+// Helper function to get mode icon
+const getModeIcon = (mode: GameMode): string => {
+  const modeIcons = {
+    'timed': '⏱️',
+    'race': '🏁',
+    'gap': '📊',
+    'infinite': '♾️'
+  }
+  return modeIcons[mode] || '❓'
+}
 
 // Mode availability
 const modeEnabled = {
@@ -254,7 +385,6 @@ const modeEnabled = {
 const gameDurations = [180, 300, 600] // 3, 5, 10 minutes
 const goalCounts = [3, 5, 7, 10] // for race mode
 const goalGaps = [2, 3, 4, 5] // for gap mode
-const turnDurations = [5, 10, 15, 20]
 
 function selectOpponent(type: OpponentType) {
   selectedOpponent.value = type
@@ -453,15 +583,14 @@ async function startGame() {
 .logout-btn {
   background: none;
   border: none;
-  color: #666;
   cursor: pointer;
-  padding: 0.5rem;
   font-size: 1.5rem;
-  transition: color 0.2s;
+  padding: 10px;
+  transition: transform 0.2s;
 }
 
 .logout-btn:hover {
-  color: #2c3e50;
+  transform: scale(1.1);
 }
 
 .game-config {
@@ -691,6 +820,122 @@ input:checked + .slider:before {
   padding: 0.5rem;
   border-radius: 4px;
   border: 1px solid #e9ecef;
+}
+
+.open-turn-timer-modal {
+  background-color: #4a4a4a;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.open-turn-timer-modal:hover {
+  background-color: #5a5a5a;
+}
+
+.turn-timer-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.turn-timer-modal .modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.turn-timer-modal .close-modal-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.timer-config {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.timer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.timer-toggle .switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.timer-toggle .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.timer-toggle .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.timer-toggle .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.timer-toggle input:checked + .slider {
+  background-color: #4a4a4a;
+}
+
+.timer-toggle input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.turn-duration {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.turn-duration select {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
 
 .start-button {
