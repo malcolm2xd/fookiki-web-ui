@@ -87,7 +87,7 @@ export function createPlayer(team: Team, role: PlayerRole, positionStr: string, 
     isCaptain
   }
 
-  console.log('✅ Player Created:', player)
+  // console.log('✅ Player Created:', player)
   return player
 }
 
