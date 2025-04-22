@@ -58,15 +58,6 @@ export function createPlayer(team: Team, role: PlayerRole, positionStr: string, 
     resolvedFormationName = FORMATIONS[formationIndex]?.name || FORMATIONS[0].name
   }
 
-  console.log('🏃 Creating Player Debug:', {
-    team,
-    role,
-    positionStr,
-    originalFormationName: formationName,
-    resolvedFormationName,
-    availableFormations: FORMATIONS.map(f => f.name)
-  })
-
   const currentFormation = FORMATIONS.find(f => f.name === resolvedFormationName)
   if (!currentFormation) {
     console.error(`❌ Formation ${resolvedFormationName} not found`, {
@@ -87,7 +78,6 @@ export function createPlayer(team: Team, role: PlayerRole, positionStr: string, 
     isCaptain
   }
 
-  // console.log('✅ Player Created:', player)
   return player
 }
 

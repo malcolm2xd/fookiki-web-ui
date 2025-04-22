@@ -67,12 +67,6 @@ const router = createRouter({
       beforeEnter: requireAuth
     },
     {
-      path: '/room',
-      name: 'room',
-      component: GameRoom,
-      beforeEnter: requireAuth
-    },
-    {
       path: '/login',
       name: 'login',
       component: LoginView,
