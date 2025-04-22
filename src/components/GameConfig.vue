@@ -381,11 +381,11 @@ async function startGame() {
       }
 
       // Matchmaking
-      await gameRoomStore.findMatch({
-        mode: selectedMode.value,
-        ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
-        ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
-      })
+      // await gameRoomStore.findMatch({
+      //   mode: selectedMode.value,
+      //   ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+      //   ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
+      // })
       const matchRoomId = await gameRoomStore.findMatch({
         mode: selectedMode.value,
         ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
