@@ -1001,3 +1001,5 @@ export type {
   GridConfig, 
   GameState 
 } from '@/types/game'
+
+export { parsePosition }

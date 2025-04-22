@@ -4,12 +4,22 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GameRoom, MatchRequest, Team, Position, Player, PlayerRole } from '@/types/game'
-import type { Formation } from '@/types/formations'
-import { useGameStore } from './game'
-import { createPlayer, parsePosition } from './game'
+import type { GamePlayer as Player, GameMode } from '@/types/game'
+import type { GameRoom } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
 import { FORMATIONS } from '@/types/formations'
+
+// Local type definitions
+export type Team = 'blue' | 'red'
+export type Position = { row: number, col: number }
+export type PlayerRole = 'G' | 'D' | 'M' | 'F'
+
+// Store and utility imports
+import { useGameStore } from './game'
+import { parsePosition, createPlayer } from './game'
+
+// Explicitly export parsePosition
+export { parsePosition }
 
 // Utility functions for game state management
 function getAdjacentPlayers(players: Player[], position: Position): Player[] {
@@ -60,7 +70,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   // State
   const currentRoom = ref<GameRoom | null>(null)
-  const matchmakingStatus = ref<'idle' | 'searching' | 'joining' | 'creating'>('idle')
+  const matchmakingStatus = ref<'idle' | 'searching' | 'joining' | 'in_game'>('idle')
   const error = ref<string | null>(null)
 
   // Game state management
@@ -450,81 +460,60 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const roomRef = doc(firestore, 'gameRooms', roomId)
       const roomSnap = await getDoc(roomRef)
 
-      console.log('🚪 Room Snapshot:', {
-        exists: roomSnap.exists(),
-        data: roomSnap.data()
-      })
-
       if (!roomSnap.exists()) {
-        console.error(`❌ Room ${roomId} does not exist`)
-        throw new Error('ROOM_NOT_FOUND')
+        throw new Error('Room not found')
       }
 
       const roomData = roomSnap.data() as GameRoom
       const playerIds = Object.keys(roomData.players)
 
-      console.log('🏠 Room Data:', {
-        roomId,
-        status: roomData.status,
-        players: playerIds,
-        currentUser: auth.currentUser.uid
-      })
-
-      // Check if room is full or game is already in progress
-      if (playerIds.length >= 2) {
-        if (roomData.status === 'in_progress' && !playerIds.includes(auth.currentUser.uid)) {
-          console.error('❌ Room is full or game is in progress')
-          throw new Error('Room is full or game is in progress')
-        }
+      // Check if room is full
+      if (playerIds.length >= 2 && !playerIds.includes(auth.currentUser.uid)) {
+        throw new Error('Room is already full')
       }
 
-      // Prepare player data for the second player
+      // Prepare player data
       const playerData = {
         uid: auth.currentUser.uid,
-        phoneNumber: auth.currentUser.phoneNumber,
-        displayName: auth.currentUser.displayName || 'Player',
+        phoneNumber: auth.currentUser.phoneNumber || '',
+        displayName: auth.currentUser.displayName || auth.currentUser.phoneNumber || '',
         color: playerIds.length === 0 ? 'blue' : 'red',
-        ready: false,
+        ready: true,
         score: 0
       }
 
       // Update room with new player
-      await updateDoc(roomRef, {
-        [`players.${auth.currentUser.uid}`]: playerData,
-        updatedAt: Date.now()
-      })
-
-      // If two players have joined, update room status
-      if (Object.keys(roomData.players).length + 1 === 2) {
-        await updateDoc(roomRef, {
-          status: 'in_progress',
-          'gameState.currentTurn': playerIds[0] || auth.currentUser.uid,
-          'gameState.startTime': Date.now(),
-          'gameState.timestamp': Date.now()
-        })
+      const updatedPlayers = {
+        ...roomData.players,
+        [auth.currentUser.uid]: playerData
       }
 
-      // Navigate to the game URL
-      router.push(`/game/${roomId}`)
+      // Update game state if room is now full
+      const updatedGameState = playerIds.length === 1 
+        ? createInitialGameBoard(roomData.settings.formation || '0') 
+        : roomData.gameState
+
+      // Update Firestore document
+      await updateDoc(roomRef, {
+        players: updatedPlayers,
+        gameState: updatedGameState,
+        status: Object.keys(updatedPlayers).length === 2 ? 'ready' : 'waiting',
+        updatedAt: Date.now()
+      })
 
       // Listen for room updates
       const unsubscribe = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
           const updatedRoomData = doc.data() as GameRoom
-
-          // Ensure the room data has an ID
-          const roomWithId = {
+          currentRoom.value = {
             ...updatedRoomData,
             id: doc.id
           }
-
-          // Update the current room
-          currentRoom.value = roomWithId
           console.log('🔄 Room Updated:', currentRoom.value)
         }
       })
 
-      matchmakingStatus.value = 'idle'
+      matchmakingStatus.value = 'in_game'
       return roomId
     } catch (e) {
       console.error('❌ Join room error:', e)
@@ -588,16 +577,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     currentRoom,
     matchmakingStatus,
     error,
-    gamePhase,
-    currentTeam,
-    ballPosition,
-    selectedPlayerId,
-    isBallSelected,
-    validMoves,
-    isFirstMove,
-    score,
-    winner,
-    canCaptainMoveAgain,
 
     // Getters
     isInRoom,
