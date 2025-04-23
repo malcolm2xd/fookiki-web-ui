@@ -56,7 +56,7 @@ export const useGameStore = defineStore('game', {
       duration: 300, // 5 minutes default
       goalTarget: 5, // for race mode
       goalGap: 2, // for gap mode
-      formation: Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
+      formation: FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
     },
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
@@ -68,7 +68,7 @@ export const useGameStore = defineStore('game', {
     gamePhase: 'BALL_MOVEMENT' as 'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER',
     score: { blue: 0, red: 0 },
     winner: null as Team | null,
-    currentFormation: Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0],
+    currentFormation: FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name,
     isFirstMove: true as boolean,
     blueScore: 0,
     redScore: 0,
@@ -109,11 +109,7 @@ export const useGameStore = defineStore('game', {
     bluePlayers: (state) => state.players.filter(p => p.team === 'blue'),
     redPlayers: (state) => state.players.filter(p => p.team === 'red'),
     selectedPlayer: (state) => state.players.find(p => p.id === state.selectedPlayerId),
-    availableFormations: () => Object.entries(FORMATIONS).map(([key, formation]) => ({
-      key,
-      name: formation.name,
-      description: formation.description
-    })),
+    availableFormations: () => FORMATIONS,
     getCell: (state) => (position: Position) => {
       const player = state.players.find(p => p.position.row === position.row && p.position.col === position.col);
       return {
@@ -132,7 +128,7 @@ export const useGameStore = defineStore('game', {
     },
 
     setFormation(formationKey: string) {
-      if (FORMATIONS[formationKey]) {
+      if (FORMATIONS.find(f => f.name === formationKey)) {
         this.gameConfig.formation = formationKey
         this.currentFormation = formationKey
         this.initializeGame()
@@ -140,10 +136,10 @@ export const useGameStore = defineStore('game', {
     },
 
     initializeGame() {
-      const formation = FORMATIONS[this.currentFormation]
+      const formation = FORMATIONS.find(f => f.name === this.currentFormation)
       if (!formation) {
         // Fallback to default formation if current is invalid
-        this.currentFormation = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
+        this.currentFormation = FORMATIONS[0].name
         return
       }
 

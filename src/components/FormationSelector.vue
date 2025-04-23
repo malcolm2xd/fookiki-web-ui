@@ -12,7 +12,7 @@
       <option
         v-for="formation in formations"
         :key="formation.key"
-        :value="formation.key"
+        :value="formation.name"
       >
         {{ formation.name }}
       </option>

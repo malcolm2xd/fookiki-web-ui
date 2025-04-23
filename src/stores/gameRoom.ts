@@ -100,6 +100,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     if (!currentRoom.value) {
       throw new Error('No current game room')
     }
+    console.log("getGameState", currentRoom.value)
     return currentRoom.value.gameState || initializeGameState(getDefaultFormation())
   }
 
@@ -112,8 +113,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   // Utility function to find default formation
   function getDefaultFormation(): string {
-    const defaultFormation = FORMATIONS.find(f => f.default)
-    return defaultFormation ? defaultFormation.name : FORMATIONS[0].name
+    return FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
   }
 
   // Utility function to create initial game board
@@ -243,6 +243,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   // Actions
   async function createGameRoom(gameRoom: GameRoom): Promise<string> {
     try {
+      console.log('Creating game room:', gameRoom)
       if (!auth.currentUser) {
         console.error('❌ User not authenticated')
         throw new Error('User not authenticated')
@@ -299,10 +300,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       })
 
       // Ensure selectedFormation is a string name
-      const safeSelectedFormation = typeof selectedFormation === 'number' 
-        ? FORMATIONS[selectedFormation]?.name || FORMATIONS[0].name 
-        : (selectedFormation || FORMATIONS[0].name)
-
+      const safeSelectedFormation = FORMATIONS.find(f => f.name === selectedFormation)?.name || FORMATIONS[0].name
       // Use the game store to initialize players
       const store = useGameStore()
       
@@ -490,7 +488,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       // Update Firestore document
       await updateDoc(roomRef, {
         players: updatedPlayers,
-        gameState: initializeGameState(roomData.settings.formation || '0'),
+        gameState: initializeGameState(roomData.settings.formation || getDefaultFormation()),
         status: Object.keys(updatedPlayers).length === 2 ? 'ready' : 'waiting',
         updatedAt: Date.now()
       })

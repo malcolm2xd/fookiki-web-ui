@@ -25,4 +25,9 @@ export interface GameRoom {
   gameState: 'waiting' | 'in_progress' | 'completed'
   createdAt: Date
   updatedAt: Date
+  settings: {
+    mode: string
+    duration: number
+    formation: string
+  }
 }

@@ -18,33 +18,24 @@
     <div class="config-section opponent-section">
       <h2>Select Opponent</h2>
       <div class="opponent-selector">
-        <button 
-          class="opponent-button"
-          @click="selectOpponent('online')"
-          :class="{ active: selectedOpponent === 'online' }"
-        >
+        <button class="opponent-button" @click="selectOpponent('online')"
+          :class="{ active: selectedOpponent === 'online' }">
           <div class="opponent-icon">🌐</div>
           <div class="opponent-info">
             <h3>Online</h3>
             <p>Play against others online</p>
           </div>
         </button>
-        <button 
-          class="opponent-button"
-          @click="selectOpponent('local')"
-          :class="{ active: selectedOpponent === 'local' }"
-        >
+        <button class="opponent-button" @click="selectOpponent('local')"
+          :class="{ active: selectedOpponent === 'local' }">
           <div class="opponent-icon">👥</div>
           <div class="opponent-info">
             <h3>Same Screen</h3>
             <p>Play against a friend on this device</p>
           </div>
         </button>
-        <button 
-          class="opponent-button"
-          @click="selectOpponent('same_screen_online')"
-          :class="{ active: selectedOpponent === 'same_screen_online' }"
-        >
+        <button class="opponent-button" @click="selectOpponent('same_screen_online')"
+          :class="{ active: selectedOpponent === 'same_screen_online' }">
           <div class="opponent-icon">🌐👥</div>
           <div class="opponent-info">
             <h3>Online Same Screen</h3>
@@ -54,29 +45,20 @@
 
       </div>
     </div>
-    
+
     <div class="main-config">
       <!-- Consolidated Settings Button -->
       <div class="config-panel settings-panel">
-        <button 
-          class="all-settings-btn" 
-          @click="showAllSettingsModal = true"
-        >
+        <button class="all-settings-btn" @click="showAllSettingsModal = true">
           🛠️ Game Configuration
         </button>
       </div>
 
       <!-- All Settings Modal -->
-      <div 
-        v-if="showAllSettingsModal" 
-        class="all-settings-modal"
-      >
+      <div v-if="showAllSettingsModal" class="all-settings-modal">
         <div class="modal-content">
           <h2>Game Configuration</h2>
-          <button 
-            class="close-modal-btn" 
-            @click="showAllSettingsModal = false"
-          >
+          <button class="close-modal-btn" @click="showAllSettingsModal = false">
             ✖️
           </button>
 
@@ -84,44 +66,29 @@
           <div class="settings-section game-mode-section">
             <h3>Game Mode</h3>
             <div class="mode-selector">
-              <button 
-                class="mode-button"
-                @click="selectMode('timed')"
-                :class="{ active: selectedMode === 'timed' }"
-              >
+              <button class="mode-button" @click="selectMode('timed')" :class="{ active: selectedMode === 'timed' }">
                 <div class="mode-icon">⏱️</div>
                 <div class="mode-info">
                   <h3>Timed</h3>
                   <p>Play for a set duration</p>
                 </div>
               </button>
-              <button 
-                class="mode-button"
-                @click="selectMode('race')"
-                :class="{ active: selectedMode === 'race' }"
-              >
+              <button class="mode-button" @click="selectMode('race')" :class="{ active: selectedMode === 'race' }">
                 <div class="mode-icon">🏁</div>
                 <div class="mode-info">
                   <h3>Race</h3>
                   <p>First to score goals wins</p>
                 </div>
               </button>
-              <button 
-                class="mode-button"
-                @click="selectMode('gap')"
-                :class="{ active: selectedMode === 'gap' }"
-              >
+              <button class="mode-button" @click="selectMode('gap')" :class="{ active: selectedMode === 'gap' }">
                 <div class="mode-icon">📊</div>
                 <div class="mode-info">
                   <h3>Goal Gap</h3>
                   <p>Win by goal difference</p>
                 </div>
               </button>
-              <button 
-                class="mode-button"
-                @click="selectMode('infinite')"
-                :class="{ active: selectedMode === 'infinite' }"
-              >
+              <button class="mode-button" @click="selectMode('infinite')"
+                :class="{ active: selectedMode === 'infinite' }">
                 <div class="mode-icon">♾️</div>
                 <div class="mode-info">
                   <h3>Infinite</h3>
@@ -138,12 +105,8 @@
             <div v-if="selectedMode === 'timed'" class="duration-settings">
               <h4>Time Duration</h4>
               <div class="duration-selector">
-                <button 
-                  v-for="duration in [300, 600, 900]" 
-                  :key="duration"
-                  @click="selectDuration(duration)"
-                  :class="{ active: selectedDuration === duration }"
-                >
+                <button v-for="duration in [300, 600, 900]" :key="duration" @click="selectDuration(duration)"
+                  :class="{ active: selectedDuration === duration }">
                   {{ formatDuration(duration) }}
                 </button>
               </div>
@@ -153,12 +116,8 @@
             <div v-if="selectedMode === 'race'" class="goal-settings">
               <h4>Goal Target</h4>
               <div class="goal-selector">
-                <button 
-                  v-for="count in [3, 5, 7]" 
-                  :key="count"
-                  @click="selectGoalCount(count)"
-                  :class="{ active: selectedGoalCount === count }"
-                >
+                <button v-for="count in [3, 5, 7]" :key="count" @click="selectGoalCount(count)"
+                  :class="{ active: selectedGoalCount === count }">
                   {{ count }} Goals
                 </button>
               </div>
@@ -168,12 +127,8 @@
             <div v-if="selectedMode === 'gap'" class="gap-settings">
               <h4>Goal Gap</h4>
               <div class="gap-selector">
-                <button 
-                  v-for="gap in [1, 2, 3]" 
-                  :key="gap"
-                  @click="selectGap(gap)"
-                  :class="{ active: selectedGap === gap }"
-                >
+                <button v-for="gap in [1, 2, 3]" :key="gap" @click="selectGap(gap)"
+                  :class="{ active: selectedGap === gap }">
                   {{ gap }} Goal Difference
                 </button>
               </div>
@@ -184,10 +139,7 @@
           <div class="settings-section turn-timer-section">
             <h3>Turn Timer</h3>
             <div class="turn-timer-toggle">
-              <button 
-                class="open-turn-timer-modal"
-                @click="showTurnTimerModal = true"
-              >
+              <button class="open-turn-timer-modal" @click="showTurnTimerModal = true">
                 🕒 Configure Turn Timer
               </button>
             </div>
@@ -202,43 +154,26 @@
       </div>
 
       <!-- Turn Timer Modal -->
-      <div 
-        v-if="showTurnTimerModal" 
-        class="turn-timer-modal"
-      >
+      <div v-if="showTurnTimerModal" class="turn-timer-modal">
         <div class="modal-content">
           <h2>Turn Timer Configuration</h2>
-          <button 
-            class="close-modal-btn" 
-            @click="showTurnTimerModal = false"
-          >
+          <button class="close-modal-btn" @click="showTurnTimerModal = false">
             ✖️
           </button>
 
           <div class="timer-config">
             <div class="timer-toggle">
               <label class="switch">
-                <input 
-                  type="checkbox" 
-                  v-model="turnTimerEnabled"
-                  @change="updateTurnTimer"
-                >
+                <input type="checkbox" v-model="turnTimerEnabled" @change="updateTurnTimer">
                 <span class="slider"></span>
               </label>
               <span>Enable Turn Timer</span>
             </div>
-            
+
             <div class="turn-duration" v-if="turnTimerEnabled">
               <label>Turn Duration:</label>
-              <select 
-                v-model="turnDuration" 
-                @change="updateTurnTimer"
-              >
-                <option 
-                  v-for="duration in turnDurations" 
-                  :key="duration" 
-                  :value="duration"
-                >
+              <select v-model="turnDuration" @change="updateTurnTimer">
+                <option v-for="duration in turnDurations" :key="duration" :value="duration">
                   {{ duration }} seconds
                 </option>
               </select>
@@ -248,16 +183,10 @@
       </div>
 
       <!-- Game Settings Modal -->
-      <div 
-        v-if="showGameSettingsModal" 
-        class="game-settings-modal"
-      >
+      <div v-if="showGameSettingsModal" class="game-settings-modal">
         <div class="modal-content">
           <h2>Game Settings</h2>
-          <button 
-            class="close-modal-btn" 
-            @click="showGameSettingsModal = false"
-          >
+          <button class="close-modal-btn" @click="showGameSettingsModal = false">
             ✖️
           </button>
 
@@ -265,12 +194,8 @@
           <div v-if="selectedMode === 'timed'" class="mode-settings">
             <h3>Time Duration</h3>
             <div class="duration-selector">
-              <button 
-                v-for="duration in [300, 600, 900]" 
-                :key="duration"
-                @click="selectDuration(duration)"
-                :class="{ active: selectedDuration === duration }"
-              >
+              <button v-for="duration in [300, 600, 900]" :key="duration" @click="selectDuration(duration)"
+                :class="{ active: selectedDuration === duration }">
                 {{ formatDuration(duration) }}
               </button>
             </div>
@@ -280,12 +205,8 @@
           <div v-if="selectedMode === 'race'" class="mode-settings">
             <h3>Goal Target</h3>
             <div class="goal-selector">
-              <button 
-                v-for="count in [3, 5, 7]" 
-                :key="count"
-                @click="selectGoalCount(count)"
-                :class="{ active: selectedGoalCount === count }"
-              >
+              <button v-for="count in [3, 5, 7]" :key="count" @click="selectGoalCount(count)"
+                :class="{ active: selectedGoalCount === count }">
                 {{ count }} Goals
               </button>
             </div>
@@ -295,12 +216,8 @@
           <div v-if="selectedMode === 'gap'" class="mode-settings">
             <h3>Goal Gap</h3>
             <div class="gap-selector">
-              <button 
-                v-for="gap in [1, 2, 3]" 
-                :key="gap"
-                @click="selectGap(gap)"
-                :class="{ active: selectedGap === gap }"
-              >
+              <button v-for="gap in [1, 2, 3]" :key="gap" @click="selectGap(gap)"
+                :class="{ active: selectedGap === gap }">
                 {{ gap }} Goal Difference
               </button>
             </div>
@@ -327,7 +244,8 @@ import { useGameStore } from '@/stores/game'
 import { FORMATIONS } from '@/types/formations'
 import { useAuthStore } from '@/stores/auth'
 import { useGameRoomStore } from '@/stores/gameRoom'
-import { GameRoom, MatchRequest, GamePlayer, GameConfig } from '@/types/game'
+import type { GameRoom as GameRoomType } from '@/types/gameRoom'
+import { GamePlayer, GameConfig } from '@/types/game'
 
 type GameMode = 'timed' | 'race' | 'gap' | 'infinite'
 import FormationSelector from '@/components/FormationSelector.vue'
@@ -360,6 +278,8 @@ const selectedGap = ref(2) // for gap mode
 const turnTimerEnabled = ref(false)
 const turnDuration = ref(10)
 const showTurnTimerModal = ref(false)
+const showAllSettingsModal = ref(false)
+const showGameSettingsModal = ref(false)
 const turnDurations = [5, 10, 15, 20, 30, 45, 60]
 
 // Helper function to get mode icon
@@ -419,134 +339,64 @@ function updateTurnTimer() {
 }
 
 async function startGame() {
-  console.log('Starting game...')
-  
-  const opponent = selectedOpponent.value
-  
-  if (opponent === 'same_screen_online') {
-    try {
-      // Validate game mode
-      if (selectedMode.value === 'infinite') {
-        throw new Error('Infinite mode is not supported for online play')
-      }
-
-      // Create a game room for same-screen online mode
-      const gameRoom: GameRoom = {
-        id: '', // Firebase will generate this
-        status: 'waiting',
-        players: {
-          [authStore.user?.uid || '']: {
-            uid: authStore.user?.uid || '',
-            phoneNumber: authStore.user?.phoneNumber || '',
-            displayName: displayName.value,
-            color: 'blue', // First player is blue
-            ready: true,
-            score: 0
-          }
-        },
-        settings: {
-          mode: selectedMode.value,
-          ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
-          ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value }),
-          ...(selectedMode.value === 'gap' && { goalGap: selectedGap.value }),
-          formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
-        },
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
-
-      // Update game configuration
-      gameStore.gameConfig = {
-        opponent: selectedOpponent.value === 'same_screen_online' ? 'online' : selectedOpponent.value,
-        mode: selectedMode.value,
-        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
-        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
-        goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
-        formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
-      }
-
-      // Set timer and game configurations
-      switch (selectedMode.value) {
-        case 'timed':
-          gameStore.timerConfig.gameDuration = selectedDuration.value
-          break
-      }
-
-      // Create game room
-      const roomId = await gameRoomStore.createGameRoom(gameRoom)
-
-      // Navigate to room
-      router.push(`/game/${roomId}`)
-    } catch (error) {
-      console.error('Same screen online game setup error:', error)
-      // Handle error (show toast, etc)
+  try {
+    // Validate game configuration
+    if (!authStore.user) {
+      console.error('User not authenticated')
+      return
     }
-  } else if (opponent === 'online') {
-    try {
-      // Start matchmaking
-      // Only timed and race modes are supported for online play
-      if (selectedMode.value !== 'timed' && selectedMode.value !== 'race') {
-        throw new Error('Only timed and race modes are supported for online play')
-      }
-      
-      // Update game configuration
-      gameStore.gameConfig = {
-        opponent: 'online',
-        mode: selectedMode.value,
-        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
-        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
-        goalGap: 0,
-        formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
-      }
 
-      // Set timer
-      if (selectedMode.value === 'timed') {
-        gameStore.timerConfig.gameDuration = selectedDuration.value
-      }
-
-      // Matchmaking
-      // await gameRoomStore.findMatch({
-      //   mode: selectedMode.value,
-      //   ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
-      //   ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
-      // })
-      const matchRoomId = await gameRoomStore.findMatch({
+    // Prepare game room configuration
+    const selectedFormation = gameStore.currentFormation
+    
+    const gameRoom: GameRoomType = {
+      id: '', // Firebase will generate this
+      name: `${displayName.value}'s Game`, // Add a name
+      mode: selectedMode.value,
+      players: {
+        blue: [],
+        red: []
+      },
+      currentTurn: 'blue', // Default initial turn
+      gameState: 'waiting',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      settings: {
         mode: selectedMode.value,
-        ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
-        ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
-      })
-      router.push(`/game/${matchRoomId}`)
-    } catch (error) {
-      console.error('Matchmaking error:', error)
-      // Handle error (show toast, etc)
+        duration: selectedDuration.value,
+        formation: selectedFormation
+      }
     }
-  } else {
-    // Local game
-    gameStore.gameConfig.opponent = opponent
-    gameStore.gameConfig.mode = selectedMode.value
+
+    // Configure game store based on mode
+    gameStore.gameConfig = {
+      opponent: selectedOpponent.value,
+      mode: selectedMode.value,
+      duration: selectedDuration.value,
+      goalTarget: selectedGoalCount.value,
+      goalGap: selectedGap.value,
+      formation: selectedFormation
+    }
 
     switch (selectedMode.value) {
       case 'timed':
-        gameStore.gameConfig.duration = selectedDuration.value
         gameStore.timerConfig.gameDuration = selectedDuration.value
         break
       case 'race':
-        gameStore.gameConfig.goalTarget = selectedGoalCount.value
+        gameStore.timerConfig.goalTarget = selectedGoalCount.value
         break
       case 'gap':
-        gameStore.gameConfig.goalGap = selectedGap.value
+        gameStore.timerConfig.goalGap = selectedGap.value
         break
     }
-    
-    // Initialize and start the game
-    gameStore.initializeGame()
-    router.push('/selfgame')
+
+    // Create game room
+    const roomId = await gameRoomStore.createGameRoom(gameRoom)
+
+    // Navigate to room
+    router.push(`/game/${roomId}`)
+  } catch (error) {
+    console.error('Same screen online game setup error:', error)
   }
 }
 </script>
@@ -802,11 +652,11 @@ async function startGame() {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #4CAF50;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(26px);
 }
 
@@ -918,11 +768,11 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
-.timer-toggle input:checked + .slider {
+.timer-toggle input:checked+.slider {
   background-color: #4a4a4a;
 }
 
-.timer-toggle input:checked + .slider:before {
+.timer-toggle input:checked+.slider:before {
   transform: translateX(26px);
 }
 

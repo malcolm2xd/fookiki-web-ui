@@ -1,11 +1,13 @@
 import { GameState, GameRoom, GamePlayer, GameRoomStatus } from '../types/game';
 import { FORMATIONS } from '../types/formations';
 
-export function initializeGameState(formationKey: string = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]): GameState {
-  const formation = FORMATIONS[formationKey];
+export function initializeGameState(formationKey: string): GameState {
+  console.log('Initializing game state with formation:', formationKey)
+  const formation = FORMATIONS.find(f => f.name === formationKey);
   if (!formation) {
     throw new Error(`Formation ${formationKey} not found`);
   }
+  console.log(formation)
   const board =  {
     board: {
       blue: {
@@ -30,35 +32,35 @@ export function initializeGameState(formationKey: string = Object.keys(FORMATION
     lastMove: null,
     timestamp: Date.now()
   };
-  console.error('setting board:' + JSON.stringify(board, null, 2))
+  // console.error('setting board:' + JSON.stringify(board, null, 2))
   return board
 }
 
-export function createGameRoom(
-  players: {blue: GamePlayer, red: GamePlayer}, 
-  formationKey: string = Object.keys(FORMATIONS).find(key => FORMATIONS[key].default) || Object.keys(FORMATIONS)[0]
-): GameRoom {
-  const gameRoom: GameRoom = {
-    id: generateGameRoomId(),
-    status: 'playing' as GameRoomStatus,
-    players: {
-      [players.blue.uid]: players.blue,
-      [players.red.uid]: players.red
-    },
-    gameState: initializeGameState(formationKey),
-    settings: {
-      mode: 'timed',
-      duration: 10 * 60,  // 10 minutes default
-      formation: formationName
-    },
-    createdAt: Date.now()
-  };
+// export function createGameRoom(
+//   players: {blue: GamePlayer, red: GamePlayer}, 
+//   formationKey: string = FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
+// ): GameRoom {
+//   const gameRoom: GameRoom = {
+//     id: generateGameRoomId(),
+//     status: 'playing' as GameRoomStatus,
+//     players: {
+//       [players.blue.uid]: players.blue,
+//       [players.red.uid]: players.red
+//     },
+//     gameState: initializeGameState(formationKey),
+//     settings: {
+//       mode: 'timed',
+//       duration: 10 * 60,  // 10 minutes default
+//       formation: formationKey
+//     },
+//     createdAt: Date.now()
+//   };
 
-  // Console log the entire game room object before saving
-  console.error('Game Room Object to be saved in Firebase:', JSON.stringify(gameRoom, null, 2));
+//   // Console log the entire game room object before saving
+//   console.error('Game Room Object to be saved in Firebase:', JSON.stringify(gameRoom, null, 2));
 
-  return gameRoom;
-}
+//   return gameRoom;
+// }
 
 // Helper function to mirror position for red team
 function mirrorPosition(pos: string): string {
@@ -68,7 +70,7 @@ function mirrorPosition(pos: string): string {
   return `${mirroredRow}${col}`;
 }
 
-// Simple ID generator (replace with more robust method in production)
-function generateGameRoomId(): string {
-  return `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
+// // Simple ID generator (replace with more robust method in production)
+// function generateGameRoomId(): string {
+//   return `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+// }
