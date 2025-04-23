@@ -62,6 +62,56 @@ function endTurn(currentTeam: Team): Team {
   return currentTeam === 'blue' ? 'red' : 'blue'
 }
 
+// New method to fetch and restore game room state
+async function restoreGameRoomState(roomId: string) {
+  try {
+    if (!auth.currentUser) {
+      console.error('User not authenticated')
+      return null
+    }
+
+    const roomRef = doc(firestore, 'gameRooms', roomId)
+    const roomSnapshot = await getDoc(roomRef)
+
+    if (roomSnapshot.exists()) {
+      const roomData = roomSnapshot.data() as GameRoom
+
+      // Log detailed room restoration info
+      console.log('🔄 Restoring Game Room State:', {
+        roomId,
+        gameState: roomData.gameState,
+        players: Object.keys(roomData.players),
+        currentUser: auth.currentUser.uid
+      })
+
+      // Update current room
+      currentRoom.value = {
+        ...roomData,
+        id: roomSnapshot.id
+      }
+
+      // Set up real-time listener for continuous updates
+      const unsubscribe = onSnapshot(roomRef, (doc) => {
+        if (doc.exists()) {
+          const updatedRoomData = doc.data() as GameRoom
+          currentRoom.value = {
+            ...updatedRoomData,
+            id: doc.id
+          }
+          console.log('🔄 Room Updated During Restore:', currentRoom.value)
+        }
+      })
+
+      return roomData
+    } else {
+      console.error('❌ Game room not found during restoration')
+      return null
+    }
+  } catch (error) {
+    console.error('Error restoring game room state:', error)
+    return null
+  }
+}
 
 export const useGameRoomStore = defineStore('gameRoom', () => {
   // Initialize router
@@ -249,12 +299,23 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         throw new Error('User not authenticated')
       }
 
+      // Ensure the current user is added to the players object
+      const updatedPlayers = {
+        ...gameRoom.players,
+        [auth.currentUser.uid]: {
+          uid: auth.currentUser.uid,
+          displayName: auth.currentUser.displayName || 'Player',
+          team: Object.keys(gameRoom.players).length === 0 ? 'blue' : 'red'
+        }
+      }
+
       // Create a new game room in Firestore
       const gameRoomsRef = collection(firestore, 'gameRooms')
       const roomRef = doc(gameRoomsRef)
       const newRoomData = {
         ...gameRoom,
         id: roomRef.id, // Update with generated ID
+        players: updatedPlayers, // Use updated players object
         gameState: initializeGameState(gameRoom.settings.formation || getDefaultFormation())
       }
       await setDoc(roomRef, newRoomData)
@@ -266,6 +327,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       console.log('✅ Game room created with ID:', roomRef.id)
+      console.log('🧩 Updated Players:', updatedPlayers)
 
       // Set up game store data
       const gameStore = useGameStore()
@@ -523,25 +585,57 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     }
   }
 
-
   async function makeMove(from: [number, number], to: [number, number]) {
     try {
-      if (!currentRoom.value || !auth.currentUser || !isMyTurn.value) return
+      console.log('Making move:', { from, to })
+      
+      // Ensure current user is in the room
+      if (!currentRoom.value || !auth.currentUser) {
+        console.error('Cannot make move: No current room or user')
+        return
+      }
+      
+      // Check if current user is a player in the room
+      const playerIds = Object.keys(currentRoom.value.players)
+      if (!playerIds.includes(auth.currentUser.uid)) {
+        console.error('User is not a player in this room')
+        return
+      }
 
       const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
 
-      // Prepare the update object with only the fields that need to change
+      // Prepare the update object with comprehensive game state
       const gameState = getGameState() // Use safe getter
       const updateData: Record<string, any> = {
         'gameState.board': gameState.board, // Updated board state
+        'gameState.previousBoard': currentRoom.value.gameState?.board || null, 
         'gameState.currentTurn': getNextTurnPlayer(),
-        'gameState.lastMove': { from, to },
+        'gameState.lastMove': { 
+          from, 
+          to, 
+          player: auth.currentUser.uid, 
+          timestamp: Date.now() 
+        },
         'gameState.timestamp': Date.now(),
         updatedAt: Date.now()
       }
 
+      console.log("Updating game state:", JSON.stringify(updateData))
+      
+      // Atomic update to ensure consistency
       await updateDoc(roomRef, updateData)
+
+      // Optional: Additional validation or logging
+      const updatedDoc = await getDoc(roomRef)
+      if (updatedDoc.exists()) {
+        const docData = updatedDoc.data()
+        console.log('✅ Move successfully recorded:', {
+          lastMove: docData?.gameState?.lastMove,
+          currentTurn: docData?.gameState?.currentTurn
+        })
+      }
     } catch (e) {
+      console.error('Error in makeMove:', e)
       error.value = (e as Error).message
       throw e
     }
@@ -591,6 +685,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     getNextTurnPlayer,
     leaveRoom,
     createGameRoom,
+    restoreGameRoomState,
 
     // Utility methods
     getAdjacentPlayers: () => getAdjacentPlayers,

@@ -176,8 +176,6 @@ export default defineComponent({
     }
 
     onMounted(async () => {
-      console.log("+++++++++++++++++++++++++")
-      console.log(auth)
       try {
         isRoomLoading.value = true
         roomError.value = null
@@ -266,6 +264,14 @@ export default defineComponent({
       }
 
       // For ball movement
+      if (isValidMove(row, col)) {
+        // Call makeMove when a valid move is selected
+        gameRoomStore.makeMove(
+          [ballPosition.value.row, ballPosition.value.col], 
+          [row, col]
+        )
+      }
+      
       gameStore.selectCell({ row, col })
     }
 
@@ -795,6 +801,36 @@ export default defineComponent({
     padding: 0.5rem;
   }
 
+  .grid-labels {
+    font-size: 0.5rem;
+  }
+
+  .column-labels {
+    top: -1.5rem;
+    height: 0.8rem;
+  }
+
+  .row-labels {
+    left: -0.8rem;
+    width: 0.6rem;
+  }
+
+  .player-role {
+    font-size: 0.6rem;
+  }
+
+  .captain-star {
+    font-size: 0.6rem;
+    top: -0.3rem;
+    right: -0.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-board-wrapper {
+    padding: 0.25rem;
+  }
+
   .player-info-section {
     display: flex;
     justify-content: center;
@@ -888,36 +924,6 @@ export default defineComponent({
   }
 }
 
-@media (max-width: 480px) {
-  .game-board-wrapper {
-    padding: 0.25rem;
-  }
-
-  .grid-labels {
-    font-size: 0.5rem;
-  }
-
-  .column-labels {
-    top: -1.5rem;
-    height: 0.8rem;
-  }
-
-  .row-labels {
-    left: -0.8rem;
-    width: 0.6rem;
-  }
-
-  .player-role {
-    font-size: 0.6rem;
-  }
-
-  .captain-star {
-    font-size: 0.6rem;
-    top: -0.3rem;
-    right: -0.3rem;
-  }
-}
-
 .cell {
   position: relative;
   width: 40px;
@@ -1007,7 +1013,6 @@ export default defineComponent({
   /* color: white; */
   padding: 0.5rem;
   border-radius: 5%;
-
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(2px);

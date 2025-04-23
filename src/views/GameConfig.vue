@@ -339,64 +339,134 @@ function updateTurnTimer() {
 }
 
 async function startGame() {
-  try {
-    // Validate game configuration
-    if (!authStore.user) {
-      console.error('User not authenticated')
-      return
-    }
-
-    // Prepare game room configuration
-    const selectedFormation = gameStore.currentFormation
-    
-    const gameRoom: GameRoomType = {
-      id: '', // Firebase will generate this
-      name: `${displayName.value}'s Game`, // Add a name
-      mode: selectedMode.value,
-      players: {
-        blue: [],
-        red: []
-      },
-      currentTurn: 'blue', // Default initial turn
-      gameState: 'waiting',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      settings: {
-        mode: selectedMode.value,
-        duration: selectedDuration.value,
-        formation: selectedFormation
+  console.log('Starting game...')
+  
+  const opponent = selectedOpponent.value
+  
+  if (opponent === 'same_screen_online') {
+    try {
+      // Validate game mode
+      if (selectedMode.value === 'infinite') {
+        throw new Error('Infinite mode is not supported for online play')
       }
-    }
 
-    // Configure game store based on mode
-    gameStore.gameConfig = {
-      opponent: selectedOpponent.value,
-      mode: selectedMode.value,
-      duration: selectedDuration.value,
-      goalTarget: selectedGoalCount.value,
-      goalGap: selectedGap.value,
-      formation: selectedFormation
+      // Create a game room for same-screen online mode
+      const gameRoom: GameRoom = {
+        id: '', // Firebase will generate this
+        status: 'waiting',
+        players: {
+          [authStore.user?.uid || '']: {
+            uid: authStore.user?.uid || '',
+            phoneNumber: authStore.user?.phoneNumber || '',
+            displayName: displayName.value,
+            color: 'blue', // First player is blue
+            ready: true,
+            score: 0
+          }
+        },
+        settings: {
+          mode: selectedMode.value,
+          ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+          ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value }),
+          ...(selectedMode.value === 'gap' && { goalGap: selectedGap.value }),
+          formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+
+      // Update game configuration
+      gameStore.gameConfig = {
+        opponent: selectedOpponent.value === 'same_screen_online' ? 'online' : selectedOpponent.value,
+        mode: selectedMode.value,
+        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
+        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
+        goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
+        formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
+      }
+
+      // Set timer and game configurations
+      switch (selectedMode.value) {
+        case 'timed':
+          gameStore.timerConfig.gameDuration = selectedDuration.value
+          break
+      }
+
+      // Create game room
+      const roomId = await gameRoomStore.createGameRoom(gameRoom)
+
+      // Navigate to room
+      router.push(`/game/${roomId}`)
+    } catch (error) {
+      console.error('Same screen online game setup error:', error)
+      // Handle error (show toast, etc)
     }
+  } else if (opponent === 'online') {
+    try {
+      // Start matchmaking
+      // Only timed and race modes are supported for online play
+      if (selectedMode.value !== 'timed' && selectedMode.value !== 'race') {
+        throw new Error('Only timed and race modes are supported for online play')
+      }
+      
+      // Update game configuration
+      gameStore.gameConfig = {
+        opponent: 'online',
+        mode: selectedMode.value,
+        duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
+        goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
+        goalGap: 0,
+        formation: typeof gameStore.gameConfig.formation === 'number' 
+            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
+            : gameStore.gameConfig.formation
+      }
+
+      // Set timer
+      if (selectedMode.value === 'timed') {
+        gameStore.timerConfig.gameDuration = selectedDuration.value
+      }
+
+      // Matchmaking
+      // await gameRoomStore.findMatch({
+      //   mode: selectedMode.value,
+      //   ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+      //   ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
+      // })
+      const matchRoomId = await gameRoomStore.findMatch({
+        mode: selectedMode.value,
+        ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
+        ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value })
+      })
+      router.push(`/game/${matchRoomId}`)
+    } catch (error) {
+      console.error('Matchmaking error:', error)
+      // Handle error (show toast, etc)
+    }
+  } else {
+    // Local game
+    gameStore.gameConfig.opponent = opponent
+    gameStore.gameConfig.mode = selectedMode.value
 
     switch (selectedMode.value) {
       case 'timed':
+        gameStore.gameConfig.duration = selectedDuration.value
         gameStore.timerConfig.gameDuration = selectedDuration.value
         break
       case 'race':
-        gameStore.timerConfig.goalTarget = selectedGoalCount.value
+        gameStore.gameConfig.goalTarget = selectedGoalCount.value
         break
       case 'gap':
-        gameStore.timerConfig.goalGap = selectedGap.value
+        gameStore.gameConfig.goalGap = selectedGap.value
         break
     }
-
-    // Create game room
-    const roomId = await gameRoomStore.createGameRoom(gameRoom)
-
-    // Navigate to room
-    router.push(`/game/${roomId}`)
-  } catch (error) {
-    console.error('Same screen online game setup error:', error)
+    
+    // Initialize and start the game
+    gameStore.initializeGame()
+    router.push('/selfgame')
   }
 }
 </script>
