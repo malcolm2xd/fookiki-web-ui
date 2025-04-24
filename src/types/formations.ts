@@ -8,6 +8,7 @@ export interface Formation {
     M: string[]  // 4 Midfielders
     F: string[]  // 2 Forwards
   }
+  ball: string
   captains: {
     blue: string
     red: string
@@ -38,6 +39,7 @@ export const FORMATIONS: Formation[] = [
         '13E'  // Second forward
       ]
     },
+    ball:'9E',
     captains: {
       blue: '6E',
       red: '11F'
@@ -66,6 +68,7 @@ export const FORMATIONS: Formation[] = [
         '8G'  // Right forward
       ]
     },
+    ball:'9E',
     captains: {
       blue: '7E',
       red: '11F'
@@ -94,6 +97,7 @@ export const FORMATIONS: Formation[] = [
         '8G'  // Right striker
       ]
     },
+    ball:'9E',
     captains: {
       blue: '6D',
       red: '11G'
@@ -122,6 +126,7 @@ export const FORMATIONS: Formation[] = [
         '8G'  // Right striker
       ]
     },
+    ball:'9E',
     captains: {
       blue: '5E',
       red: '12F'
@@ -150,6 +155,7 @@ export const FORMATIONS: Formation[] = [
         '8G'  // Right striker
       ]
     },
+    ball:'9E',
     captains: {
       blue: '7D',
       red: '10G'

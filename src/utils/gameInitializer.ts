@@ -26,10 +26,10 @@ export function initializeGameState(formationKey: string): GameState {
       goals: {
         blue: ['0D', '0E', '0F', '0G'],
         red: ['17D', '17E', '17F', '17G']
-      }
+      },
+      ball:formation.ball
     },
     currentTurn: 'blue',
-    lastMove: null,
     moves: [],
     timestamp: Date.now()
   };

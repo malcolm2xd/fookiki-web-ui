@@ -593,9 +593,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     }
   }
 
-  async function makeMove(from: [number, number], to: [number, number]) {
+  async function makeMove(from: [number, number], to: [number, number], type:string) {
     try {
-      console.log('Making move:', { from, to })
+      console.log('Making move:', { from, to, type })
 
       // Ensure current user is in the room
       if (!currentRoom.value || !auth.currentUser) {
@@ -611,21 +611,53 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       const roomRef = doc(firestore, 'gameRooms', currentRoom.value.id)
+      const gameState = getGameState() // Use safe getter
+
+      function toNotation(row: number, col: number): string {
+        const colLetter = String.fromCharCode('a'.charCodeAt(0) + col);
+        return `${row + 1}${colLetter}`;
+      }
+      const fromNotation = toNotation(from[0], from[1]);
+      const toNotationStr = toNotation(to[0], to[1]);
+      
+      // Deep clone the board to avoid mutating the original state
+      const updatedBoard = JSON.parse(JSON.stringify(gameState.board));
+      
+      if (type === "player") {
+        // Find and move the player
+        let found = false;
+        for (const team of ['blue', 'red']) {
+          for (const role of ['G', 'D', 'M', 'F']) {
+            const idx = updatedBoard[team][role].indexOf(fromNotation);
+            if (idx !== -1) {
+              updatedBoard[team][role].splice(idx, 1); // Remove from old position
+              updatedBoard[team][role].push(toNotationStr); // Add to new position
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      } else if (type === "ball") {
+        // Move the ball
+        if (updatedBoard.ball && fromNotation === updatedBoard.ball.toLowerCase()) {
+          updatedBoard.ball = toNotationStr;
+        }
+      }
+      console.log(updatedBoard)
+      gameState.board = updatedBoard;
 
       // Prepare the update object with comprehensive game state
-      const gameState = getGameState() // Use safe getter
       const move = {
         from,
         to,
-        player: auth.currentUser.uid,
+        player: auth.currentUser.uid, //TODO: use color
         timestamp: Date.now()
       }
 
-      console.log('Current moves before update:', gameState.moves || [])
-      console.log('New move:', move)
-
       const updateData: Record<string, any> = {
         'gameState': gameState,
+        'gameState.board': gameState.board,
         'gameState.moves': gameState.moves.concat(move),
         'gameState.currentTurn': getNextTurnPlayer(),
         'gameState.timestamp': Date.now(),

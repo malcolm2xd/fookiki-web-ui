@@ -29,11 +29,7 @@ export interface GameState {
     };
   };
   currentTurn: string | null;
-  lastMove?: {
-    player: 'blue' | 'red';
-    from: string;
-    to: string;
-  } | null;
+  ball: string;
   moves: {
     from: [number, number];
     to: [number, number];

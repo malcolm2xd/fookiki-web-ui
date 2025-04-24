@@ -225,7 +225,8 @@ export default defineComponent({
     const currentTeam = computed(() => gameStore.currentTeam)
     const isBallSelected = computed(() => gameStore.isBallSelected)
     const isFirstMove = computed(() => gameStore.isFirstMove)
-    let lastSelected = [0,0]
+    let lastSelected = [8,4]
+    let lastSelectType = "ball"
     const getPlayerAtPosition = (row: number, col: number) => {
       return players.value.find((p: { position: { row: number, col: number } }) => p.position.row === row && p.position.col === col)
     }
@@ -240,12 +241,12 @@ export default defineComponent({
 
     const handleBallClick = () => {
       lastSelected = [ballPosition.value.row, ballPosition.value.col]
+      lastSelectType = "ball"
       gameStore.selectBall()
     }
 
     const handleCellClick = (row: number, col: number) => {
       const player = getPlayerAtPosition(row, col)
-
       // If clicking on a non-move area, unselect
       if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
         console.log("unseleting")
@@ -261,7 +262,7 @@ export default defineComponent({
 
       // If clicking on a player from the current team, select it
       if (player && player.team === currentTeam.value) {
-        console.log("selected player")
+        lastSelectType = "player"
         lastSelected = [row, col]
         gameStore.selectCell({ row, col })
         return
@@ -270,10 +271,10 @@ export default defineComponent({
       // For ball movement
       if (isValidMove(row, col)) {
         // Call makeMove when a valid move is selected
-        console.log("making the move")
         gameRoomStore.makeMove(
           lastSelected as [number, number],
-          [row, col]
+          [row, col],
+          lastSelectType
         )
       }
 
