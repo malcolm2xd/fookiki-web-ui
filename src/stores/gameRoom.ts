@@ -4,7 +4,7 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GameRoom } from '@/types/game'
+import type { GameRoom, GameState } from '@/types/game'
 import type { Team, Position } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
 import { FORMATIONS } from '@/types/formations'
@@ -145,12 +145,21 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   }
 
   // Safe getter for game state
-  function getGameState() {
-    if (!currentRoom.value) {
-      throw new Error('No current game room')
+  function getGameState(): GameState {
+    if (!currentRoom.value?.gameState) {
+      // Return a default game state if no game state exists
+      return {
+        board: {
+          blue: { G: [], D: [], M: [], F: [] },
+          red: { G: [], D: [], M: [], F: [] },
+          goals: { blue: [], red: [] }
+        },
+        currentTurn: null,
+        moves: [], // Initialize empty moves array
+        timestamp: Date.now()
+      }
     }
-    console.log("getGameState", currentRoom.value)
-    return currentRoom.value?.gameState || initializeGameState(getDefaultFormation())
+    return currentRoom.value.gameState as GameState
   }
 
   // Convert string coordinate (e.g., '3B') to [row, col]
@@ -605,16 +614,20 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
       // Prepare the update object with comprehensive game state
       const gameState = getGameState() // Use safe getter
+      const move = {
+        from,
+        to,
+        player: auth.currentUser.uid,
+        timestamp: Date.now()
+      }
+
+      console.log('Current moves before update:', gameState.moves || [])
+      console.log('New move:', move)
+
       const updateData: Record<string, any> = {
-        'gameState.board': gameState.board, // Updated board state
-        'gameState.previousBoard': currentRoom.value.gameState?.board || null,
+        'gameState': gameState,
+        'gameState.moves': gameState.moves.concat(move),
         'gameState.currentTurn': getNextTurnPlayer(),
-        'gameState.lastMove': {
-          from,
-          to,
-          player: auth.currentUser.uid,
-          timestamp: Date.now()
-        },
         'gameState.timestamp': Date.now(),
         updatedAt: Date.now()
       }
@@ -629,14 +642,12 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       if (updatedDoc.exists()) {
         const docData = updatedDoc.data()
         console.log('✅ Move successfully recorded:', {
-          lastMove: docData?.gameState?.lastMove,
+          moves: docData?.gameState?.moves,
           currentTurn: docData?.gameState?.currentTurn
         })
       }
-    } catch (e) {
-      console.error('Error in makeMove:', e)
-      error.value = (e as Error).message
-      throw e
+    } catch (error) {
+      console.error('Error making move:', error)
     }
   }
 

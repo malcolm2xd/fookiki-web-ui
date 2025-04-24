@@ -34,6 +34,12 @@ export interface GameState {
     from: string;
     to: string;
   } | null;
+  moves: {
+    from: [number, number];
+    to: [number, number];
+    player: string;
+    timestamp: number;
+  }[];
   timestamp: number;
   formation?: string;
 }

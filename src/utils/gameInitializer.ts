@@ -30,6 +30,7 @@ export function initializeGameState(formationKey: string): GameState {
     },
     currentTurn: 'blue',
     lastMove: null,
+    moves: [],
     timestamp: Date.now()
   };
   // console.error('setting board:' + JSON.stringify(board, null, 2))
