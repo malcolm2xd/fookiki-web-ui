@@ -16,15 +16,11 @@ export interface BoardPlayerPosition {
 
 export interface GameRoom {
   id: string
-  name: string
-  mode: string
-  players: {
-    [team in Team]: GamePlayer[]
-  }
-  currentTurn: Team
+  players: GamePlayer[]
   gameState: 'waiting' | 'in_progress' | 'completed'
-  createdAt: Date
-  updatedAt: Date
+  status: string
+  createdAt: number
+  updatedAt: number
   settings: {
     mode: string
     duration: number

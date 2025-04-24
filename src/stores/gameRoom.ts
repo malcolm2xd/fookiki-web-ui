@@ -4,13 +4,12 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GameRoom, BoardPlayerPosition } from '@/types/gameRoom'
+import type { GameRoom } from '@/types/game'
+import type { Team, Position } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
 import { FORMATIONS } from '@/types/formations'
 
 // Local type definitions
-export type Team = 'blue' | 'red'
-export type Position = { row: number, col: number }
 export type PlayerRole = 'G' | 'D' | 'M' | 'F'
 
 // Store and utility imports
@@ -128,7 +127,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   const ballPosition = ref<Position>({ row: 8, col: 5 })
   const selectedPlayerId = ref<string | null>(null)
   const isBallSelected = ref(false)
-  const validMoves = ref<Position[]>([])  
+  const validMoves = ref<Position[]>([])
   const isFirstMove = ref(true)
   const score = ref({ blue: 0, red: 0 })
   const winner = ref<Team | null>(null)
@@ -151,7 +150,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       throw new Error('No current game room')
     }
     console.log("getGameState", currentRoom.value)
-    return currentRoom.value.gameState || initializeGameState(getDefaultFormation())
+    return currentRoom.value?.gameState || initializeGameState(getDefaultFormation())
   }
 
   // Convert string coordinate (e.g., '3B') to [row, col]
@@ -342,10 +341,10 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         selectedFormation = FORMATIONS[selectedFormation]?.name || defaultFormation
       }
 
-      const formationConfig = FORMATIONS.find(f => f.name === selectedFormation) || 
-                               FORMATIONS.find(f => f.default) || 
-                               FORMATIONS[0]
-      
+      const formationConfig = FORMATIONS.find(f => f.name === selectedFormation) ||
+        FORMATIONS.find(f => f.default) ||
+        FORMATIONS[0]
+
       console.log('🏆 Detailed Formation Selection:', {
         gameRoomFormation: gameRoom.settings.formation,
         gameRoomSettings: gameRoom.settings,
@@ -355,7 +354,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         availableFormations: FORMATIONS.map(f => f.name),
         formationConfigDetails: formationConfig
       })
-      
+
       console.log('🧩 Player Creation Debug:', {
         playersCount: Object.entries(gameRoom.players).length,
         playerData: gameRoom.players
@@ -365,10 +364,10 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const safeSelectedFormation = FORMATIONS.find(f => f.name === selectedFormation)?.name || FORMATIONS[0].name
       // Use the game store to initialize players
       const store = useGameStore()
-      
+
       // Set the formation in the game store
       store.setFormation(safeSelectedFormation)
-      
+
       // Initialize the game with the selected formation
       store.initializeGame()
 
@@ -560,7 +559,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
       // Set the formation in the game store
       store.setFormation(roomData.settings.formation)
-      
+
       // Initialize the game with the selected formation
       store.initializeGame()
       // Listen for room updates
@@ -588,13 +587,13 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   async function makeMove(from: [number, number], to: [number, number]) {
     try {
       console.log('Making move:', { from, to })
-      
+
       // Ensure current user is in the room
       if (!currentRoom.value || !auth.currentUser) {
         console.error('Cannot make move: No current room or user')
         return
       }
-      
+
       // Check if current user is a player in the room
       const playerIds = Object.keys(currentRoom.value.players)
       if (!playerIds.includes(auth.currentUser.uid)) {
@@ -608,20 +607,20 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const gameState = getGameState() // Use safe getter
       const updateData: Record<string, any> = {
         'gameState.board': gameState.board, // Updated board state
-        'gameState.previousBoard': currentRoom.value.gameState?.board || null, 
+        'gameState.previousBoard': currentRoom.value.gameState?.board || null,
         'gameState.currentTurn': getNextTurnPlayer(),
-        'gameState.lastMove': { 
-          from, 
-          to, 
-          player: auth.currentUser.uid, 
-          timestamp: Date.now() 
+        'gameState.lastMove': {
+          from,
+          to,
+          player: auth.currentUser.uid,
+          timestamp: Date.now()
         },
         'gameState.timestamp': Date.now(),
         updatedAt: Date.now()
       }
 
       console.log("Updating game state:", JSON.stringify(updateData))
-      
+
       // Atomic update to ensure consistency
       await updateDoc(roomRef, updateData)
 

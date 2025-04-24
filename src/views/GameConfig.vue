@@ -241,13 +241,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
-import { FORMATIONS } from '@/types/formations'
 import { useAuthStore } from '@/stores/auth'
 import { useGameRoomStore } from '@/stores/gameRoom'
-import type { GameRoom as GameRoomType } from '@/types/gameRoom'
-import { GamePlayer, GameConfig } from '@/types/game'
-
-type GameMode = 'timed' | 'race' | 'gap' | 'infinite'
+import { GameRoom } from '@/types/game'
 import FormationSelector from '@/components/FormationSelector.vue'
 
 const router = useRouter()
@@ -271,7 +267,7 @@ async function logOut() {
   await authStore.logOut()
   router.push('/login')
 }
-const selectedMode = ref<GameMode>('timed')
+const selectedMode = ref<'timed' | 'race' | 'gap' | 'infinite'>('timed')
 const selectedDuration = ref(300) // 5 minutes default
 const selectedGoalCount = ref(5) // for race mode
 const selectedGap = ref(2) // for gap mode
@@ -283,7 +279,7 @@ const showGameSettingsModal = ref(false)
 const turnDurations = [5, 10, 15, 20, 30, 45, 60]
 
 // Helper function to get mode icon
-const getModeIcon = (mode: GameMode): string => {
+const getModeIcon = (mode: 'timed' | 'race' | 'gap' | 'infinite'): string => {
   const modeIcons = {
     'timed': '⏱️',
     'race': '🏁',
@@ -310,7 +306,7 @@ function selectOpponent(type: OpponentType) {
   selectedOpponent.value = type
 }
 
-function selectMode(mode: GameMode) {
+function selectMode(mode: 'timed' | 'race' | 'gap' | 'infinite') {
   if (modeEnabled[mode]) {
     selectedMode.value = mode
   }
@@ -340,9 +336,9 @@ function updateTurnTimer() {
 
 async function startGame() {
   console.log('Starting game...')
-  
+
   const opponent = selectedOpponent.value
-  
+
   if (opponent === 'same_screen_online') {
     try {
       // Validate game mode
@@ -364,17 +360,23 @@ async function startGame() {
             score: 0
           }
         },
+        gameState: {
+          board: {
+            blue: { G: [], D: [], M: [], F: [] },
+            red: { G: [], D: [], M: [], F: [] },
+            goals: { blue: [], red: [] }
+          },
+          currentTurn: null,
+          timestamp: Date.now()
+        },
         settings: {
           mode: selectedMode.value,
-          ...(selectedMode.value === 'timed' && { duration: selectedDuration.value }),
-          ...(selectedMode.value === 'race' && { goalTarget: selectedGoalCount.value }),
-          ...(selectedMode.value === 'gap' && { goalGap: selectedGap.value }),
-          formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
+          duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
+          formation: gameStore.gameConfig.formation
         },
         createdAt: Date.now(),
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        currentTurn: 'blue',
       }
 
       // Update game configuration
@@ -384,9 +386,7 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
-        formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
+        formation: gameStore.gameConfig.formation
       }
 
       // Set timer and game configurations
@@ -412,7 +412,7 @@ async function startGame() {
       if (selectedMode.value !== 'timed' && selectedMode.value !== 'race') {
         throw new Error('Only timed and race modes are supported for online play')
       }
-      
+
       // Update game configuration
       gameStore.gameConfig = {
         opponent: 'online',
@@ -420,9 +420,9 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: 0,
-        formation: typeof gameStore.gameConfig.formation === 'number' 
-            ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name 
-            : gameStore.gameConfig.formation
+        formation: typeof gameStore.gameConfig.formation === 'number'
+          ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name
+          : gameStore.gameConfig.formation
       }
 
       // Set timer
@@ -463,7 +463,7 @@ async function startGame() {
         gameStore.gameConfig.goalGap = selectedGap.value
         break
     }
-    
+
     // Initialize and start the game
     gameStore.initializeGame()
     router.push('/selfgame')
