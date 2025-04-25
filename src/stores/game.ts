@@ -122,12 +122,6 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    setGridConfig(config: GridConfig) {
-      this.gridConfig = config
-      // Reset game when grid config changes
-      this.initializeGame()
-    },
-
     setFormation(formationKey: string) {
       if (FORMATIONS.find(f => f.name === formationKey)) {
         this.gameConfig.formation = formationKey

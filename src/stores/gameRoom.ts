@@ -92,16 +92,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   const winner = ref<Team | null>(null)
   const canCaptainMoveAgain = ref(false)
 
-  // Utility function to parse board
-  function parseBoard(board: number[][] | string): number[][] {
-    if (Array.isArray(board)) return board
-    try {
-      return JSON.parse(board as string)
-    } catch {
-      // Return empty board if parsing fails
-      return Array(8).fill(null).map(() => Array(8).fill(null))
-    }
-  }
 
   // Safe getter for game state
   function getGameState(): GameState {
