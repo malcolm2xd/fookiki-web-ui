@@ -1,5 +1,5 @@
 export type Team = 'blue' | 'red'
-export type PlayerRole = 'G' | 'D' | 'M' | 'F'
+export type PlayerRole = 'G' | 'D' | 'M' | 'F' | 'C'
 
 export interface Position {
   row: number

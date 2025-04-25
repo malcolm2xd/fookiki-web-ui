@@ -1,33 +1,30 @@
-import { GameState, GameRoom, GamePlayer, GameRoomStatus } from '../types/game';
-import { FORMATIONS } from '../types/formations';
+import { GameState } from '@/types/game';
+import { FORMATION } from '@/types/formations';
 
-export function initializeGameState(formationKey: string): GameState {
-  console.log('Initializing game state with formation:', formationKey)
-  const formation = FORMATIONS.find(f => f.name === formationKey);
-  if (!formation) {
-    throw new Error(`Formation ${formationKey} not found`);
-  }
-  console.log(formation)
+export function initializeGameState(): GameState {
+
   const board =  {
     board: {
       blue: {
-        G: formation.positions.G.map(pos => pos),
-        D: formation.positions.D.map(pos => pos),
-        M: formation.positions.M.map(pos => pos),
-        F: formation.positions.F.map(pos => pos)
+        G: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'G').map(p => p.position),
+        C: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'C').map(p => p.position),
+        D: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'D').map(p => p.position),
+        M: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'M').map(p => p.position),
+        F: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'F').map(p => p.position)
       },
       red: {
         // Mirror the blue formation, adjusting row numbers
-        G: formation.positions.G.map(pos => mirrorPosition(pos)),
-        D: formation.positions.D.map(pos => mirrorPosition(pos)),
-        M: formation.positions.M.map(pos => mirrorPosition(pos)),
-        F: formation.positions.F.map(pos => mirrorPosition(pos))
+        G: FORMATION.positions.filter(p => p.team === 'red' && p.role === 'G').map(p => p.position),
+        C: FORMATION.positions.filter(p => p.team === 'red' && p.role === 'C').map(p => p.position),
+        D: FORMATION.positions.filter(p => p.team === 'red' && p.role === 'D').map(p => p.position),
+        M: FORMATION.positions.filter(p => p.team === 'red' && p.role === 'M').map(p => p.position),
+        F: FORMATION.positions.filter(p => p.team === 'red' && p.role === 'F').map(p => p.position)
       },
       goals: {
         blue: ['0D', '0E', '0F', '0G'],
         red: ['17D', '17E', '17F', '17G']
       },
-      ball:formation.ball
+      ball:FORMATION.ball
     },
     currentTurn: 'blue',
     moves: [],
@@ -36,42 +33,3 @@ export function initializeGameState(formationKey: string): GameState {
   // console.error('setting board:' + JSON.stringify(board, null, 2))
   return board
 }
-
-// export function createGameRoom(
-//   players: {blue: GamePlayer, red: GamePlayer}, 
-//   formationKey: string = FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
-// ): GameRoom {
-//   const gameRoom: GameRoom = {
-//     id: generateGameRoomId(),
-//     status: 'playing' as GameRoomStatus,
-//     players: {
-//       [players.blue.uid]: players.blue,
-//       [players.red.uid]: players.red
-//     },
-//     gameState: initializeGameState(formationKey),
-//     settings: {
-//       mode: 'timed',
-//       duration: 10 * 60,  // 10 minutes default
-//       formation: formationKey
-//     },
-//     createdAt: Date.now()
-//   };
-
-//   // Console log the entire game room object before saving
-//   console.error('Game Room Object to be saved in Firebase:', JSON.stringify(gameRoom, null, 2));
-
-//   return gameRoom;
-// }
-
-// Helper function to mirror position for red team
-function mirrorPosition(pos: string): string {
-  const row = parseInt(pos[0]);
-  const col = pos[1];
-  const mirroredRow = 17 - row;
-  return `${mirroredRow}${col}`;
-}
-
-// // Simple ID generator (replace with more robust method in production)
-// function generateGameRoomId(): string {
-//   return `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-// }

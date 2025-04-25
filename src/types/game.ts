@@ -27,9 +27,13 @@ export interface GameState {
       blue: string[];
       red: string[];
     };
+    ball: string;
+    captains: {
+      blue: string;
+      red: string;
+    };
   };
   currentTurn: string | null;
-  ball: string;
   moves: {
     from: [number, number];
     to: [number, number];
@@ -37,7 +41,6 @@ export interface GameState {
     timestamp: number;
   }[];
   timestamp: number;
-  formation?: string;
 }
 
 export type GameRoomStatus = 'waiting' | 'in_progress' | 'playing' | 'finished';
@@ -117,6 +120,7 @@ export interface Formation {
     M: string[];
     F: string[];
   };
+  ball: string;
   captains: {
     blue: string;
     red: string;

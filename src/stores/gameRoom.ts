@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 import type { GameRoom, GameState, MatchRequest } from '@/types/game'
 import type { Team, Position, BoardPlayerPosition } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
-import { FORMATIONS } from '@/types/formations'
+import { FORMATION } from '@/types/formations'
 
 // Local type definitions
 export type PlayerRole = 'G' | 'D' | 'M' | 'F'
@@ -119,75 +119,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     return [row, col]
   }
 
-  // Utility function to find default formation
-  function getDefaultFormation(): string {
-    return FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
-  }
 
-  // Utility function to create initial game board
-  function createInitialGameBoard(formationName: string): {
-    blue: {
-      G: string[];
-      D: string[];
-      M: string[];
-      F: string[];
-    };
-    red: {
-      G: string[];
-      D: string[];
-      M: string[];
-      F: string[];
-    };
-    goals: {
-      blue: string[];
-      red: string[];
-    };
-    board: number[][];
-  } {
-    const formation = FORMATIONS.find(f => f.name === formationName)
-    if (!formation) {
-      throw new Error(`Formation ${formationName} not found`)
-    }
-
-    // Create initial board structure matching the GameState type
-    const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null))
-    formation.positions.G.forEach((coord) => {
-      const [row, col] = parseCoordinate(coord)
-      initialBoard[row][col] = 'G'
-    })
-    formation.positions.D.forEach((coord) => {
-      const [row, col] = parseCoordinate(coord)
-      initialBoard[row][col] = 'D'
-    })
-    formation.positions.M.forEach((coord) => {
-      const [row, col] = parseCoordinate(coord)
-      initialBoard[row][col] = 'M'
-    })
-    formation.positions.F.forEach((coord) => {
-      const [row, col] = parseCoordinate(coord)
-      initialBoard[row][col] = 'F'
-    })
-
-    return {
-      blue: {
-        G: formation.positions.G,
-        D: formation.positions.D,
-        M: formation.positions.M,
-        F: formation.positions.F
-      },
-      red: {
-        G: formation.positions.G,
-        D: formation.positions.D,
-        M: formation.positions.M,
-        F: formation.positions.F
-      },
-      goals: {
-        blue: [],
-        red: []
-      },
-      board: initialBoard
-    }
-  }
 
   // Getters
   const isInRoom = computed(() => currentRoom.value !== null)
@@ -251,7 +183,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         ...gameRoom,
         id: roomRef.id, // Update with generated ID
         players: updatedPlayers, // Use updated players object
-        gameState: initializeGameState(gameRoom.settings.formation || getDefaultFormation())
+        gameState: initializeGameState()
       }
       await setDoc(roomRef, newRoomData)
 
@@ -263,25 +195,16 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       gameStore.$reset() // Reset the store to initial state
       // Find the default formation
       // Robust formation selection
-      const defaultFormation = FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
+      const defaultFormation = FORMATION
       let selectedFormation = gameRoom.settings.formation
 
-      // Handle numeric formation selection (convert index to name)
-      if (typeof selectedFormation === 'number') {
-        selectedFormation = FORMATIONS[selectedFormation]?.name || defaultFormation
-      }
-
-      const formationConfig = FORMATIONS.find(f => f.name === selectedFormation) ||
-        FORMATIONS.find(f => f.default) ||
-        FORMATIONS[0]
+      const formationConfig = FORMATION
 
       console.log('🏆 Detailed Formation Selection:', {
         gameRoomFormation: gameRoom.settings.formation,
         gameRoomSettings: gameRoom.settings,
         defaultFormation,
         selectedFormation,
-        formationConfig: formationConfig.name,
-        availableFormations: FORMATIONS.map(f => f.name),
         formationConfigDetails: formationConfig
       })
 
@@ -291,12 +214,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       })
 
       // Ensure selectedFormation is a string name
-      const safeSelectedFormation = FORMATIONS.find(f => f.name === selectedFormation)?.name || FORMATIONS[0].name
-      // Use the game store to initialize players
+      const safeSelectedFormation = FORMATION      // Use the game store to initialize players
       const store = useGameStore()
 
-      // Set the formation in the game store
-      store.setFormation(safeSelectedFormation)
 
       // Initialize the game with the selected formation
       store.initializeGame()
@@ -479,16 +399,13 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       // Update Firestore document
       await updateDoc(roomRef, {
         players: updatedPlayers,
-        gameState: initializeGameState(roomData.settings.formation || getDefaultFormation()),
+        gameState: initializeGameState(),
         status: Object.keys(updatedPlayers).length === 2 ? 'ready' : 'waiting',
         updatedAt: Date.now()
       })
 
       // Use the game store to initialize players
       const store = useGameStore()
-
-      // Set the formation in the game store
-      store.setFormation(roomData.settings.formation || getDefaultFormation())
 
       // Initialize the game with the selected formation
       store.initializeGame()

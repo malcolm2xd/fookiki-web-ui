@@ -1,164 +1,46 @@
-export interface Formation {
-  name: string
-  description: string
-  default?: boolean
-  positions: {
-    G: string[]  // 1 Goalkeeper
-    D: string[]  // 4 Defenders
-    M: string[]  // 4 Midfielders
-    F: string[]  // 2 Forwards
-  }
-  ball: string
-  captains: {
-    blue: string
-    red: string
-  }
+
+export interface Pawn {
+  team: Team
+  role: PlayerRole
+  position: string
+  label: string
+  isCaptain: boolean
 }
 
-export const FORMATIONS: Formation[] = [
-  {
-    name: 'Mal-formation',
-    description: 'Custom experimental formation',
-    default: true,
-    positions: {
-      G: ['1E'],
-      D: [
-        '3B', // Left back
-        '4I', // Right back
-        '5D', // Left center back
-        '6G'  // Right center back
-      ],
-      M: [
-        '6B', // Left mid
-        '6E', // Center mid
-        '7D', // Right mid
-        '8J'  // Attacking mid
-      ],
-      F: [
-        '8E', // Fixed forward at E8
-        '13E'  // Second forward
-      ]
-    },
-    ball:'9E',
-    captains: {
-      blue: '6E',
-      red: '11F'
-    }
-  },
-  {
-    name: '4-4-2 Diamond',
-    description: 'Classic formation with diamond midfield',
-    default: false,
-    positions: {
-      G: ['1E'],
-      D: [
-        '3B', // Left back
-        '3D', // Left center back
-        '3G', // Right center back
-        '3I'  // Right back
-      ],
-      M: [
-        '5E', // Defensive mid
-        '6D', // Left mid
-        '6F', // Right mid
-        '7E'  // Attacking mid
-      ],
-      F: [
-        '8E', // Left forward
-        '8G'  // Right forward
-      ]
-    },
-    ball:'9E',
-    captains: {
-      blue: '7E',
-      red: '11F'
-    }
-  },
-  {
-    name: '4-4-2 Flat',
-    description: 'Traditional formation with flat midfield line',
-    default: false,
-    positions: {
-      G: ['1E'],
-      D: [
-        '3B', // Left back
-        '3D', // Left center back
-        '3G', // Right center back
-        '3I'  // Right back
-      ],
-      M: [
-        '6B', // Left mid
-        '6D', // Left center mid
-        '6G', // Right center mid
-        '6I'  // Right mid
-      ],
-      F: [
-        '8E', // Fixed forward at E8
-        '8G'  // Right striker
-      ]
-    },
-    ball:'9E',
-    captains: {
-      blue: '6D',
-      red: '11G'
-    }
-  },
-  {
-    name: '4-1-3-2',
-    description: 'Balanced formation with holding midfielder',
-    default: false,
-    positions: {
-      G: ['1E'],
-      D: [
-        '3B', // Left back
-        '3D', // Left center back
-        '3G', // Right center back
-        '3I'  // Right back
-      ],
-      M: [
-        '5E', // Defensive mid
-        '6C', // Left mid
-        '6E', // Center mid
-        '6G'  // Right mid
-      ],
-      F: [
-        '8E', // Fixed forward at E8
-        '8G'  // Right striker
-      ]
-    },
-    ball:'9E',
-    captains: {
-      blue: '5E',
-      red: '12F'
-    }
-  },
-  {
-    name: '4-2-2-2',
-    description: 'Box formation with double pivot',
-    default: false,
-    positions: {
-      G: ['1E'],
-      D: [
-        '3B', // Left back
-        '3D', // Left center back
-        '3G', // Right center back
-        '3I'  // Right back
-      ],
-      M: [
-        '5D', // Left defensive mid
-        '5G', // Right defensive mid
-        '7D', // Left attacking mid
-        '7G'  // Right attacking mid
-      ],
-      F: [
-        '8E', // Fixed forward at E8
-        '8G'  // Right striker
-      ]
-    },
-    ball:'9E',
-    captains: {
-      blue: '7D',
-      red: '10G'
-    }
-  }
-] 
+export type Team = 'blue' | 'red'
+export type PlayerRole = 'G' | 'D' | 'M' | 'F' | 'C'
+
+export interface Formation {
+  positions: Pawn[]
+  ball: string
+}
+
+export const FORMATION: Formation =
+{
+  positions: [
+    { team: 'blue', role: 'G', position: '1E', label: 'Goalkeeper', isCaptain: false },
+    { team: 'blue', role: 'C', position: '3B', label: 'Captain', isCaptain: false },
+    { team: 'blue', role: 'D', position: '4I', label: 'Right back', isCaptain: false },
+    { team: 'blue', role: 'D', position: '5D', label: 'Left center back', isCaptain: false },
+    { team: 'blue', role: 'D', position: '6G', label: 'Right center back', isCaptain: false },
+    { team: 'blue', role: 'M', position: '6B', label: 'Left mid', isCaptain: false },
+    { team: 'blue', role: 'M', position: '6E', label: 'Center mid', isCaptain: true },
+    { team: 'blue', role: 'M', position: '7D', label: 'Right mid', isCaptain: false },
+    { team: 'blue', role: 'M', position: '8J', label: 'Attacking mid', isCaptain: false },
+    { team: 'blue', role: 'F', position: '8E', label: 'Forward', isCaptain: false },
+    { team: 'blue', role: 'F', position: '13E', label: 'Second forward', isCaptain: false },
+
+    { team: 'red', role: 'G', position: '16F', label: 'Goalkeeper', isCaptain: false },
+    { team: 'red', role: 'C', position: '13I', label: 'Captain', isCaptain: false },
+    { team: 'red', role: 'D', position: '13B', label: 'Right back', isCaptain: false },
+    { team: 'red', role: 'D', position: '12G', label: 'Left center back', isCaptain: false },
+    { team: 'red', role: 'D', position: '11D', label: 'Right center back', isCaptain: false },
+    { team: 'red', role: 'M', position: '11F', label: 'Left mid', isCaptain: true },
+    { team: 'red', role: 'M', position: '11I', label: 'Center mid', isCaptain: false },
+    { team: 'red', role: 'M', position: '10G', label: 'Right mid', isCaptain: false },
+    { team: 'red', role: 'M', position: '9A', label: 'Attacking mid', isCaptain: false },
+    { team: 'red', role: 'F', position: '9F', label: 'Forward', isCaptain: false },
+    { team: 'red', role: 'F', position: '4F', label: 'Second forward', isCaptain: false }
+  ],
+  ball: '9E'
+}

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { GridConfig } from '@/types/grid'
 import type { Formation } from '@/types/formations'
 import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
-import { FORMATIONS } from '@/types/formations'
+import { FORMATION } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
 import { Player, Position, Team, PlayerRole } from '@/types/player'
 
@@ -15,40 +15,6 @@ function parsePosition(coord: string): Position {
   return { row, col }
 }
 
-// Helper function to create a player
-export function createPlayer(team: Team, role: PlayerRole, positionStr: string, formationName: string): Player {
-  // Robust formation name handling
-  let resolvedFormationName = formationName
-
-  // If formationName is a number or numeric string, convert to formation name
-  if (!isNaN(Number(formationName))) {
-    const formationIndex = Number(formationName)
-    resolvedFormationName = FORMATIONS[formationIndex]?.name || FORMATIONS[0].name
-  }
-
-  const currentFormation = FORMATIONS.find(f => f.name === resolvedFormationName)
-  if (!currentFormation) {
-    console.error(`❌ Formation ${resolvedFormationName} not found`, {
-      resolvedFormationName,
-      availableFormations: FORMATIONS.map(f => f.name)
-    })
-    throw new Error(`Formation ${resolvedFormationName} not found. Available formations: ${FORMATIONS.map(f => f.name).join(', ')}`)
-  }
-
-  const isCaptain = positionStr === currentFormation.captains[team as keyof typeof currentFormation.captains] 
-
-  const player = {
-    id: `${team}-${role}-${positionStr}`,
-    team,
-    role,
-    position: parsePosition(positionStr),
-    initialPosition: { ...parsePosition(positionStr) },
-    isCaptain
-  }
-
-  return player
-}
-
 export const useGameStore = defineStore('game', {
   state: () => ({
     gameConfig: {
@@ -56,8 +22,7 @@ export const useGameStore = defineStore('game', {
       mode: 'timed', // 'timed', 'race', 'gap', 'infinite'
       duration: 300, // 5 minutes default
       goalTarget: 5, // for race mode
-      goalGap: 2, // for gap mode
-      formation: FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name
+      goalGap: 2 // for gap mode
     },
     gridConfig: DEFAULT_GRID_CONFIG,
     currentTeam: 'blue' as Team,
@@ -69,7 +34,6 @@ export const useGameStore = defineStore('game', {
     gamePhase: 'BALL_MOVEMENT' as 'PLAYER_SELECTION' | 'PLAYER_MOVEMENT' | 'BALL_MOVEMENT' | 'GAME_OVER',
     score: { blue: 0, red: 0 },
     winner: null as Team | null,
-    currentFormation: FORMATIONS.find(f => f.default)?.name || FORMATIONS[0].name,
     isFirstMove: true as boolean,
     blueScore: 0,
     redScore: 0,
@@ -110,7 +74,6 @@ export const useGameStore = defineStore('game', {
     bluePlayers: (state) => state.players.filter((p:Player) => p.team === 'blue'),
     redPlayers: (state) => state.players.filter((p:Player) => p.team === 'red'),
     selectedPlayer: (state) => state.players.find((p:Player) => p.id === state.selectedPlayerId),
-    availableFormations: () => FORMATIONS,
     getCell: (state) => (position: Position) => {
       const player = state.players.find((p:Player) => p.position.row === position.row && p.position.col === position.col);
       return {
@@ -122,22 +85,7 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    setFormation(formationKey: string) {
-      if (FORMATIONS.find(f => f.name === formationKey)) {
-        this.gameConfig.formation = formationKey
-        this.currentFormation = formationKey
-        this.initializeGame()
-      }
-    },
-
     initializeGame() {
-      const formation = FORMATIONS.find(f => f.name === this.currentFormation)
-      if (!formation) {
-        // Fallback to default formation if current is invalid
-        this.currentFormation = FORMATIONS[0].name
-        return
-      }
-
       // Clean up any existing timers first
       this.stopGameTimer()
       this.stopTurnTimer()
@@ -172,60 +120,20 @@ export const useGameStore = defineStore('game', {
         
         return `${mirroredNumber}${mirroredLetter}`
       }
-      
-      // Create blue team players
-      const bluePlayers: Player[] = [
-        // Goalkeeper
-        ...formation.positions.G.map((pos, i) => 
-          createPlayer('blue', 'G', pos, formation.name)
-        ),
-        // Defenders
-        ...formation.positions.D.map((pos, i) => 
-          createPlayer('blue', 'D', pos, formation.name)
-        ),
-        // Midfielders
-        ...formation.positions.M.map((pos, i) => 
-          createPlayer('blue', 'M', pos, formation.name)
-        ),
-        // Forwards
-        ...formation.positions.F.map((pos, i) => 
-          createPlayer('blue', 'F', pos, formation.name)
-        )
-      ]
 
-      // Create red team players by mirroring the formation
-      const redPlayers: Player[] = [
-        // Goalkeeper
-        ...formation.positions.G.map((pos, i) => 
-          createPlayer('red', 'G', mirrorPosition(pos), formation.name)
-        ),
-        // Defenders
-        ...formation.positions.D.map((pos, i) => 
-          createPlayer('red', 'D', mirrorPosition(pos), formation.name)
-        ),
-        // Midfielders
-        ...formation.positions.M.map((pos, i) => 
-          createPlayer('red', 'M', mirrorPosition(pos), formation.name)
-        ),
-        // Forwards
-        ...formation.positions.F.map((pos, i) => 
-          createPlayer('red', 'F', mirrorPosition(pos), formation.name)
-        )
-      ]
-
-      this.players = [...bluePlayers, ...redPlayers]
-      
-      // Find the blue team's forward player closest to the half line
-      const blueForward = bluePlayers.find(p => p.role === 'F')
-      if (blueForward) {
-        // Place the ball in front of the forward across the half line
-        this.ballPosition = {
-          row: 8,  // Half line
-          col: blueForward.position.col
-        }
-      } else {
-        // Fallback position if no forward is found
-        this.ballPosition = { row: 8, col: 4 }  // E9 position
+      FORMATION.positions.forEach(pos => {
+        this.players.push({
+          id: `${pos.team}-${pos.role}-${pos.position}`,
+          team: pos.team,
+          role: pos.role,
+          position: parsePosition(pos.position),
+          initialPosition: { ...parsePosition(pos.position) },
+          isCaptain: pos.isCaptain
+        })
+      })
+      this.ballPosition = {
+        row: 8, //TODO: have a common method for this and reset
+        col: 4
       }
       
       this.currentTeam = 'blue'

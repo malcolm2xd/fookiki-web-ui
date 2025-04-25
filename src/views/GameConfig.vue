@@ -144,12 +144,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Formation Selector -->
-          <div class="settings-section formation-section">
-            <h3>Formation</h3>
-            <FormationSelector />
-          </div>
         </div>
       </div>
 
@@ -222,17 +216,9 @@
               </button>
             </div>
           </div>
-
-          <!-- Formation Selector -->
-          <div class="formation-settings">
-            <h3>Formation</h3>
-            <FormationSelector />
-          </div>
         </div>
       </div>
     </div>
-
-
     <button class="start-button" @click="startGame">Start Game</button>
   </div>
 </template>
@@ -244,7 +230,6 @@ import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
 import { useGameRoomStore } from '@/stores/gameRoom'
 import { GameRoom } from '@/types/game'
-import FormationSelector from '@/components/FormationSelector.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -267,6 +252,7 @@ async function logOut() {
   await authStore.logOut()
   router.push('/login')
 }
+
 const selectedMode = ref<'timed' | 'race' | 'gap' | 'infinite'>('timed')
 const selectedDuration = ref(300) // 5 minutes default
 const selectedGoalCount = ref(5) // for race mode
@@ -372,7 +358,6 @@ async function startGame() {
         settings: {
           mode: selectedMode.value,
           duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
-          formation: gameStore.gameConfig.formation
         },
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -385,7 +370,6 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: selectedMode.value === 'gap' ? selectedGap.value : 0,
-        formation: gameStore.gameConfig.formation
       }
 
       // Set timer and game configurations
@@ -419,7 +403,6 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: 0,
-        formation: gameStore.gameConfig.formation
       }
 
       // Set timer
