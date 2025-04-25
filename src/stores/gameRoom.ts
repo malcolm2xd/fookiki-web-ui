@@ -4,8 +4,8 @@ import { auth, firestore, db } from '@/config/firebase'
 import { ref as dbRef, push, onValue, update, set, serverTimestamp } from 'firebase/database'
 import { doc, setDoc, updateDoc, onSnapshot, getDoc, collection } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
-import type { GameRoom, GameState } from '@/types/game'
-import type { Team, Position } from '@/types/gameRoom'
+import type { GameRoom, GameState, MatchRequest } from '@/types/game'
+import type { Team, Position, BoardPlayerPosition } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
 import { FORMATIONS } from '@/types/formations'
 
@@ -26,29 +26,6 @@ function getAdjacentPlayers(players: BoardPlayerPosition[], position: Position):
     const colDiff = Math.abs(player.position.col - position.col)
     return (rowDiff <= 1 && colDiff <= 1)
   })
-}
-
-function getBallMoves(player: Player, ballPosition: Position): Position[] {
-  const moves: Position[] = []
-  const { row, col } = ballPosition
-
-  // Implement movement logic for different roles
-  switch (player.role) {
-    case 'goalkeeper':
-      // Goalkeeper limited movement
-      break
-    case 'defender':
-      // Defender movement logic
-      break
-    case 'midfielder':
-      // Midfielder can move more freely
-      break
-    case 'forward':
-      // Forward has more aggressive movement
-      break
-  }
-
-  return moves
 }
 
 function checkGoal(ballPosition: Position): 'blue' | 'red' | null {
@@ -81,24 +58,6 @@ async function restoreGameRoomState(roomId: string) {
         gameState: roomData.gameState,
         players: Object.keys(roomData.players),
         currentUser: auth.currentUser.uid
-      })
-
-      // Update current room
-      currentRoom.value = {
-        ...roomData,
-        id: roomSnapshot.id
-      }
-
-      // Set up real-time listener for continuous updates
-      const unsubscribe = onSnapshot(roomRef, (doc) => {
-        if (doc.exists()) {
-          const updatedRoomData = doc.data() as GameRoom
-          currentRoom.value = {
-            ...updatedRoomData,
-            id: doc.id
-          }
-          console.log('🔄 Room Updated During Restore:', currentRoom.value)
-        }
       })
 
       return roomData
@@ -152,8 +111,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         board: {
           blue: { G: [], D: [], M: [], F: [] },
           red: { G: [], D: [], M: [], F: [] },
-          goals: { blue: [], red: [] }
+          goals: { blue: [], red: [] },
         },
+        ball: '',
         currentTurn: null,
         moves: [], // Initialize empty moves array
         timestamp: Date.now()
@@ -238,29 +198,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       board: initialBoard
     }
   }
-  function getBallMoves(player: Player): Position[] {
-    // Implement ball movement logic similar to single-player game
-    const moves: Position[] = []
-    const { row, col } = ballPosition.value
-
-    // Implement movement logic for different roles
-    switch (player.role) {
-      case 'goalkeeper':
-        // Goalkeeper limited movement
-        break
-      case 'defender':
-        // Defender movement logic
-        break
-      case 'midfielder':
-        // Midfielder can move more freely
-        break
-      case 'forward':
-        // Forward has more aggressive movement
-        break
-    }
-
-    return moves
-  }
 
   // Getters
   const isInRoom = computed(() => currentRoom.value !== null)
@@ -327,12 +264,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         gameState: initializeGameState(gameRoom.settings.formation || getDefaultFormation())
       }
       await setDoc(roomRef, newRoomData)
-
-      // Update the current room
-      currentRoom.value = {
-        ...newRoomData,
-        gameState: newRoomData.gameState
-      }
 
       console.log('✅ Game room created with ID:', roomRef.id)
       console.log('🧩 Updated Players:', updatedPlayers)
@@ -567,7 +498,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const store = useGameStore()
 
       // Set the formation in the game store
-      store.setFormation(roomData.settings.formation)
+      store.setFormation(roomData.settings.formation || getDefaultFormation())
 
       // Initialize the game with the selected formation
       store.initializeGame()
@@ -731,7 +662,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
     // Utility methods
     getAdjacentPlayers: () => getAdjacentPlayers,
-    getBallMoves: () => getBallMoves,
     checkGoal: () => checkGoal,
     endTurn: () => endTurn
   }
