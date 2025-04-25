@@ -375,8 +375,7 @@ async function startGame() {
           formation: gameStore.gameConfig.formation
         },
         createdAt: Date.now(),
-        updatedAt: Date.now(),
-        currentTurn: 'blue',
+        updatedAt: Date.now()
       }
 
       // Update game configuration
@@ -420,9 +419,7 @@ async function startGame() {
         duration: selectedMode.value === 'timed' ? selectedDuration.value : 0,
         goalTarget: selectedMode.value === 'race' ? selectedGoalCount.value : 0,
         goalGap: 0,
-        formation: typeof gameStore.gameConfig.formation === 'number'
-          ? FORMATIONS[gameStore.gameConfig.formation]?.name || FORMATIONS[0].name
-          : gameStore.gameConfig.formation
+        formation: gameStore.gameConfig.formation
       }
 
       // Set timer

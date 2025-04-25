@@ -19,12 +19,12 @@
           <div v-for="(player, uid) in gameRoomStore.currentRoom.players" :key="uid" class="player-card" :class="{
             'player-blue': player.color === 'blue',
             'player-red': player.color === 'red',
-            'current-player': player.phoneNumber === auth.currentUser.phoneNumber
+            'current-player': player.phoneNumber === auth.currentUser?.phoneNumber
           }">
             <div class="player-info">
               <span class="player-phone"
-                :class="{ 'current-player-text': player.phoneNumber === auth.currentUser.phoneNumber }">
-                {{ player.phoneNumber === auth.currentUser.phoneNumber ? "👉" : "" }} {{ player.phoneNumber }} : {{
+                :class="{ 'current-player-text': player.phoneNumber === auth.currentUser?.phoneNumber }">
+                {{ player.phoneNumber === auth.currentUser?.phoneNumber ? "👉" : "" }} {{ player.phoneNumber }} : {{
                 player.color }}
               </span>
             </div>
@@ -155,7 +155,7 @@ export default defineComponent({
     const isRoomLoading = ref<boolean>(true)
 
     const startCountdown = () => {
-      const startTime = gameRoomStore.currentRoom?.gameState?.startTime || Date.now()
+      const startTime = gameRoomStore.currentRoom?.gameState?.timestamp || Date.now()
       const gameDuration = gameRoomStore.currentRoom?.settings?.duration || 300 // Default 5 minutes
 
       const updateRemainingTime = () => {
