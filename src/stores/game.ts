@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import type { Player, Position, Team, PlayerRole, GridConfig } from './game'
+import type { GridConfig } from '@/types/grid'
 import type { Formation } from '@/types/formations'
 import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
 import { FORMATIONS } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
+import { Player, Position, Team, PlayerRole } from '@/types/player'
 
 // Convert from letter-number format (e.g., '3A') to Position
 function parsePosition(coord: string): Position {
@@ -34,7 +35,7 @@ export function createPlayer(team: Team, role: PlayerRole, positionStr: string, 
     throw new Error(`Formation ${resolvedFormationName} not found. Available formations: ${FORMATIONS.map(f => f.name).join(', ')}`)
   }
 
-  const isCaptain = positionStr === currentFormation.captains[team]
+  const isCaptain = positionStr === currentFormation.captains[team as keyof typeof currentFormation.captains] 
 
   const player = {
     id: `${team}-${role}-${positionStr}`,
@@ -106,12 +107,12 @@ export const useGameStore = defineStore('game', {
   getters: {
     totalDimensions: (state) => getTotalDimensions(state.gridConfig),
     allPlayers: (state) => state.players,
-    bluePlayers: (state) => state.players.filter(p => p.team === 'blue'),
-    redPlayers: (state) => state.players.filter(p => p.team === 'red'),
-    selectedPlayer: (state) => state.players.find(p => p.id === state.selectedPlayerId),
+    bluePlayers: (state) => state.players.filter((p:Player) => p.team === 'blue'),
+    redPlayers: (state) => state.players.filter((p:Player) => p.team === 'red'),
+    selectedPlayer: (state) => state.players.find((p:Player) => p.id === state.selectedPlayerId),
     availableFormations: () => FORMATIONS,
     getCell: (state) => (position: Position) => {
-      const player = state.players.find(p => p.position.row === position.row && p.position.col === position.col);
+      const player = state.players.find((p:Player) => p.position.row === position.row && p.position.col === position.col);
       return {
         position,
         player,
@@ -322,12 +323,12 @@ export const useGameStore = defineStore('game', {
 
     resetPositions() {
       // Reset all players to their initial positions
-      this.players.forEach(player => {
+      this.players.forEach((player: Player) => {
         player.position = { ...player.initialPosition }
       })
 
       // Find the current team's forward player
-      const currentTeamForward = this.players.find(p => 
+      const currentTeamForward = this.players.find((p: Player) => 
         p.team === this.currentTeam && 
         p.role === 'F'
       )
@@ -366,7 +367,7 @@ export const useGameStore = defineStore('game', {
     },
 
     getAdjacentPlayers(position: Position): Player[] {
-      return this.players.filter(player => {
+      return this.players.filter((player:Player) => {
         const rowDiff = Math.abs(player.position.row - position.row)
         const colDiff = Math.abs(player.position.col - position.col)
         return (rowDiff <= 1 && colDiff <= 1) // Adjacent including diagonals
@@ -379,7 +380,7 @@ export const useGameStore = defineStore('game', {
 
       // Helper to check if a position is occupied by an opponent
       const hasOpponent = (r: number, c: number): Player | null => {
-        return this.players.find(p => 
+        return this.players.find((p:Player) => 
           p.team !== player.team && 
           p.position.row === r && 
           p.position.col === c
@@ -417,7 +418,7 @@ export const useGameStore = defineStore('game', {
         // Check if position is valid (either within field or a goal cell)
         if (isGoal || isWithinField) {
           // Check if position is occupied by any player
-          const playerAtPosition = this.players.find(p => 
+          const playerAtPosition = this.players.find((p:Player) => 
             p.position.row === r && 
             p.position.col === c
           )
@@ -493,7 +494,7 @@ export const useGameStore = defineStore('game', {
                            beyondCol >= 0 && beyondCol < this.gridConfig.playingField.cols
       
       if (isWithinField) {
-        const isOccupied = this.players.some(p => 
+        const isOccupied = this.players.some((p:Player) => 
           p.position.row === beyondRow && p.position.col === beyondCol
         )
         
@@ -529,7 +530,7 @@ export const useGameStore = defineStore('game', {
         const isOnBall = row === this.ballPosition.row && col === this.ballPosition.col;
         
         // Check if the move would land on another player
-        const isOnPlayer = this.players.some(p => 
+        const isOnPlayer = this.players.some((p:Player) => 
           p.position.row === row && p.position.col === col
         );
         
@@ -564,7 +565,7 @@ export const useGameStore = defineStore('game', {
             this.isBallSelected = true;
             this.selectedPlayerId = null;
           }
-        } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+        } else if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
           // Move the ball
           this.ballPosition = position;
           this.validMoves = [];
@@ -593,9 +594,9 @@ export const useGameStore = defineStore('game', {
             this.gamePhase = 'BALL_MOVEMENT';
             this.selectedPlayerId = null;
           }
-        } else if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+        } else if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
           // Check if there's an opponent player at the target position
-          const opponentPlayer = this.players.find(p => 
+          const opponentPlayer = this.players.find((p:Player) => 
             p.team !== this.currentTeam && 
             p.position.row === position.row && 
             p.position.col === position.col
@@ -619,7 +620,7 @@ export const useGameStore = defineStore('game', {
           }
 
           // Check if the ball would move onto a player
-          const wouldMoveOntoPlayer = this.players.some(p => 
+          const wouldMoveOntoPlayer = this.players.some((p:Player) => 
             p.position.row === position.row && p.position.col === position.col
           );
           
@@ -721,9 +722,9 @@ export const useGameStore = defineStore('game', {
           this.gamePhase = 'PLAYER_SELECTION';
         }
       } else if (this.selectedPlayerId) {
-        if (this.validMoves.some(move => move.row === position.row && move.col === position.col)) {
+        if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
           // Valid move selected
-          const player = this.players.find(p => p.id === this.selectedPlayerId);
+          const player = this.players.find((p:Player) => p.id === this.selectedPlayerId);
           if (player) {
             player.position = position;
             this.selectedPlayerId = null;
@@ -904,55 +905,9 @@ export const useGameStore = defineStore('game', {
   },
 }) 
 
-// Utility function to calculate player positions
-function calculatePlayerPositions(
-  formation: Formation, 
-  team: Team, 
-  gridConfig: GridConfig
-): { [key: string]: Position } {
-  const positions: { [key: string]: Position } = {}
-  const teamPositions = formation.positions[team]
-
-  teamPositions.forEach((positionStr: string, i: number) => {
-    const pos = parsePosition(positionStr)
-    positions[positionStr] = {
-      row: team === 'blue' 
-        ? gridConfig.playingField.rows - 1 - pos.row 
-        : pos.row,
-      col: team === 'blue' 
-        ? gridConfig.playingField.cols - 1 - pos.col 
-        : pos.col
-    }
-  })
-
-  return positions
-}
-
-// Utility function to map player positions
-function mapPlayerPositions(
-  formation: Formation, 
-  team: Team, 
-  gridConfig: GridConfig
-): { [key: string]: string } {
-  const playerPositions: { [key: string]: string } = {}
-  const teamPositions = formation.positions[team]
-
-  teamPositions.forEach((positionStr: string, i: number) => {
-    const pos = parsePosition(positionStr)
-    playerPositions[positionStr] = `${team}-${pos.row}-${pos.col}`
-  })
-
-  return playerPositions
-}
-
 export type { 
-  Player, 
-  Position, 
-  Team, 
-  PlayerRole, 
   GameMode, 
-  GridConfig, 
-  GameState 
+  GameState
 } from '@/types/game'
 
 export { parsePosition }
