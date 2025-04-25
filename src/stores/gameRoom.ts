@@ -7,10 +7,6 @@ import { useRouter } from 'vue-router'
 import type { GameRoom, GameState, MatchRequest } from '@/types/game'
 import type { Team, Position, BoardPlayerPosition } from '@/types/gameRoom'
 import { initializeGameState } from '@/utils/gameInitializer'
-import { FORMATION } from '@/types/formations'
-
-// Local type definitions
-export type PlayerRole = 'G' | 'D' | 'M' | 'F'
 
 // Store and utility imports
 import { useGameStore } from './game'
@@ -97,17 +93,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   function getGameState(): GameState {
     if (!currentRoom.value?.gameState) {
       // Return a default game state if no game state exists
-      return {
-        board: {
-          blue: { G: [], D: [], M: [], F: [] },
-          red: { G: [], D: [], M: [], F: [] },
-          goals: { blue: [], red: [] },
-        },
-        ball: '',
-        currentTurn: null,
-        moves: [], // Initialize empty moves array
-        timestamp: Date.now()
-      }
+      return initializeGameState()
     }
     return currentRoom.value.gameState as GameState
   }
@@ -193,30 +179,13 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       // Set up game store data
       const gameStore = useGameStore()
       gameStore.$reset() // Reset the store to initial state
-      // Find the default formation
-      // Robust formation selection
-      const defaultFormation = FORMATION
-      let selectedFormation = gameRoom.settings.formation
-
-      const formationConfig = FORMATION
-
-      console.log('🏆 Detailed Formation Selection:', {
-        gameRoomFormation: gameRoom.settings.formation,
-        gameRoomSettings: gameRoom.settings,
-        defaultFormation,
-        selectedFormation,
-        formationConfigDetails: formationConfig
-      })
 
       console.log('🧩 Player Creation Debug:', {
         playersCount: Object.entries(gameRoom.players).length,
         playerData: gameRoom.players
       })
 
-      // Ensure selectedFormation is a string name
-      const safeSelectedFormation = FORMATION      // Use the game store to initialize players
       const store = useGameStore()
-
 
       // Initialize the game with the selected formation
       store.initializeGame()
@@ -229,7 +198,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
           duration: gameRoom.settings.duration || 0,
           goalTarget: gameRoom.settings.goalTarget || 0,
           goalGap: gameRoom.settings.goalGap || 0,
-          formation: safeSelectedFormation
         },
         timerConfig: {
           ...(gameRoom.settings.mode === 'timed' && { gameDuration: gameRoom.settings.duration || 0 })

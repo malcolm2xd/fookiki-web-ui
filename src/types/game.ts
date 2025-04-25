@@ -28,10 +28,6 @@ export interface GameState {
       red: string[];
     };
     ball: string;
-    captains: {
-      blue: string;
-      red: string;
-    };
   };
   currentTurn: string | null;
   moves: {
@@ -69,20 +65,13 @@ export interface GameRoom {
       };
     };
     currentTurn: string | null;
-    lastMove?: {
-      player: 'blue' | 'red';
-      from: string;
-      to: string;
-    } | null;
     timestamp: number;
-    formation?: string;
   };
   settings: {
     mode: GameMode;
     duration?: number;
     goalTarget?: number;
     goalGap?: number;
-    formation?: string;
   };
   createdAt?: number;
   updatedAt?: number;
@@ -121,8 +110,4 @@ export interface Formation {
     F: string[];
   };
   ball: string;
-  captains: {
-    blue: string;
-    red: string;
-  };
 }

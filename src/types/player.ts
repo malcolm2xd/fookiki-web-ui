@@ -45,6 +45,20 @@ export const MOVEMENT_RULES: Record<PlayerRole, MovementRule> = {
       anyDirection: false
     }
   },
+  'C': {
+    piece: {
+      horizontal: 1,
+      vertical: 1,
+      diagonal: 1,
+      anyDirection: true
+    },
+    ball: {
+      horizontal: 3,
+      vertical: 3,
+      diagonal: 0,
+      anyDirection: false
+    }
+  },
   'D': {
     piece: {
       horizontal: 2,
