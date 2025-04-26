@@ -26,14 +26,6 @@
             <p>Play against others online</p>
           </div>
         </button>
-        <button class="opponent-button" @click="selectOpponent('local')"
-          :class="{ active: selectedOpponent === 'local' }">
-          <div class="opponent-icon">👥</div>
-          <div class="opponent-info">
-            <h3>Same Screen</h3>
-            <p>Play against a friend on this device</p>
-          </div>
-        </button>
         <button class="opponent-button" @click="selectOpponent('same_screen_online')"
           :class="{ active: selectedOpponent === 'same_screen_online' }">
           <div class="opponent-icon">🌐👥</div>
@@ -424,27 +416,6 @@ async function startGame() {
       console.error('Matchmaking error:', error)
       // Handle error (show toast, etc)
     }
-  } else {
-    // Local game
-    gameStore.gameConfig.opponent = opponent
-    gameStore.gameConfig.mode = selectedMode.value
-
-    switch (selectedMode.value) {
-      case 'timed':
-        gameStore.gameConfig.duration = selectedDuration.value
-        gameStore.timerConfig.gameDuration = selectedDuration.value
-        break
-      case 'race':
-        gameStore.gameConfig.goalTarget = selectedGoalCount.value
-        break
-      case 'gap':
-        gameStore.gameConfig.goalGap = selectedGap.value
-        break
-    }
-
-    // Initialize and start the game
-    gameStore.initializeGame()
-    router.push('/selfgame')
   }
 }
 </script>

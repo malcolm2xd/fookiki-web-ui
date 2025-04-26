@@ -6,7 +6,6 @@ import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
 const LoginView = () => import('@/views/LoginView.vue');
 const GameBoard = () => import('@/views/GameBoard.vue');
 const GameConfig = () => import('@/views/GameConfig.vue');
-const SinglePlay = () => import('@/views/SinglePlay.vue');
 
 // Auth guard - only allow authenticated users
 function requireAuth(
@@ -51,12 +50,6 @@ const router = createRouter({
       path: '/game/:gameId',
       name: 'game',
       component: GameBoard,
-      beforeEnter: requireAuth
-    },
-    {
-      path: '/selfgame',
-      name: 'selfgame',
-      component: SinglePlay,
       beforeEnter: requireAuth
     },
     {
