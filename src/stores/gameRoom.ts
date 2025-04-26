@@ -47,15 +47,6 @@ async function restoreGameRoomState(roomId: string) {
 
     if (roomSnapshot.exists()) {
       const roomData = roomSnapshot.data() as GameRoom
-
-      // Log detailed room restoration info
-      console.log('🔄 Restoring Game Room State:', {
-        roomId,
-        gameState: roomData.gameState,
-        players: Object.keys(roomData.players),
-        currentUser: auth.currentUser.uid
-      })
-
       return roomData
     } else {
       console.error('❌ Game room not found during restoration')
@@ -146,7 +137,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
   // Actions
   async function createGameRoom(gameRoom: GameRoom): Promise<string> {
     try {
-      console.log('Creating game room:', gameRoom)
       if (!auth.currentUser) {
         console.error('❌ User not authenticated')
         throw new Error('User not authenticated')
@@ -173,17 +163,9 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
       await setDoc(roomRef, newRoomData)
 
-      console.log('✅ Game room created with ID:', roomRef.id)
-      console.log('🧩 Updated Players:', updatedPlayers)
-
       // Set up game store data
       const gameStore = useGameStore()
       gameStore.$reset() // Reset the store to initial state
-
-      console.log('🧩 Player Creation Debug:', {
-        playersCount: Object.entries(gameRoom.players).length,
-        playerData: gameRoom.players
-      })
 
       const store = useGameStore()
 
@@ -203,10 +185,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
           ...(gameRoom.settings.mode === 'timed' && { gameDuration: gameRoom.settings.duration || 0 })
         }
       })
-
-      console.log('🚀 Initialized Players:', store.players)
-      //   }
-      // })
 
       return roomRef.id
     } catch (error) {
@@ -252,34 +230,25 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         }
 
         // Create a new request in the matchmaking queue
-        console.log('📝 Creating matchmaking request...')
         const queueRef = dbRef(db, 'matchmaking')
         const newRequestRef = await push(queueRef, request)
-        console.log('✅ Request registered with ID:', newRequestRef.key)
 
         // Listen for match
-        console.log('👀 Listening for match at:', `matches/${auth.currentUser.uid}`)
         const matchRef = dbRef(db, `matches/${auth.currentUser.uid}`)
-        console.log('🔍 Setting up match listener at:', matchRef.toString())
 
         // First, clear any existing match data
         await set(matchRef, null)
 
         const unsubscribe = onValue(matchRef, async (snapshot) => {
           const match = snapshot.val()
-          console.log('📨 Received match update:', match)
 
           if (match === null) {
-            console.log('⏳ Waiting for match...')
             return
           }
 
           if (match?.roomId) {
-            console.log('★ Match found! Room ID:', match.roomId)
             // Found a match, clean up listener
             unsubscribe()
-
-            console.log('✨ Successfully joined room:', match.roomId)
 
             // Attempt to join the room
             await joinRoom(match.roomId)
@@ -293,7 +262,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         })
 
         // Clean up if component is unmounted
-        console.log('🔄 Setting up cleanup for page unload...')
         const cleanup = async () => {
           console.log('🗑 Cleaning up matchmaking...')
           unsubscribe()
@@ -329,7 +297,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         throw new Error('User not authenticated')
       }
 
-      console.log(`🔍 Attempting to join room: ${roomId}`)
       matchmakingStatus.value = 'joining'
       error.value = null
 
@@ -385,7 +352,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
             ...updatedRoomData,
             id: doc.id
           }
-          console.log('🔄 Room Updated:', currentRoom.value)
         }
       })
 
@@ -399,10 +365,8 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
     }
   }
 
-  async function makeMove(from: [number, number], to: [number, number], type:string) {
+  async function makeMove(from: [number, number], to: [number, number], type: string) {
     try {
-      console.log('Making move:', { from, to, type })
-
       // Ensure current user is in the room
       if (!currentRoom.value || !auth.currentUser) {
         console.error('Cannot make move: No current room or user')
@@ -425,10 +389,10 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
       const fromNotation = toNotation(from[0], from[1]);
       const toNotationStr = toNotation(to[0], to[1]);
-      
+
       // Deep clone the board to avoid mutating the original state
       const updatedBoard = JSON.parse(JSON.stringify(gameState.board));
-      
+
       if (type === "player") {
         // Find and move the player
         let found = false;
@@ -450,7 +414,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
           updatedBoard.ball = toNotationStr;
         }
       }
-      console.log(updatedBoard)
       gameState.board = updatedBoard;
 
       // Prepare the update object with comprehensive game state
@@ -470,8 +433,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         updatedAt: Date.now()
       }
 
-      console.log("Updating game state:", JSON.stringify(updateData))
-
       // Atomic update to ensure consistency
       await updateDoc(roomRef, updateData)
 
@@ -479,10 +440,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const updatedDoc = await getDoc(roomRef)
       if (updatedDoc.exists()) {
         const docData = updatedDoc.data()
-        console.log('✅ Move successfully recorded:', {
-          moves: docData?.gameState?.moves,
-          currentTurn: docData?.gameState?.currentTurn
-        })
       }
     } catch (error) {
       console.error('Error making move:', error)

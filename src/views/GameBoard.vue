@@ -197,7 +197,6 @@ export default defineComponent({
 
         // Room data is now available
         const roomData = gameRoomStore.currentRoom
-        console.log('🎮 Game Room Entry:', roomData)
 
         // Start countdown when game is in progress
         if (roomData.status === 'in_progress') {
@@ -249,7 +248,6 @@ export default defineComponent({
       const player = getPlayerAtPosition(row, col)
       // If clicking on a non-move area, unselect
       if (!isValidMove(row, col) && !player && !isBallAtPosition(row, col)) {
-        console.log("unseleting")
         gameStore.selectCell({ row, col })
         return
       }
@@ -292,7 +290,7 @@ export default defineComponent({
       if (confirmed) {
         // Optional: Add game cleanup logic here
         gameStore.$reset() // Reset game store
-        gameRoomStore.leaveRoom() // Leave the current game room
+        // gameRoomStore.leaveRoom() // Leave the current game room
         router.push('/lobby')
       }
     }

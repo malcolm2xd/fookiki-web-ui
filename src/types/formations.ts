@@ -12,7 +12,7 @@ export type PlayerRole = 'G' | 'D' | 'M' | 'F' | 'C'
 
 export interface Formation {
   positions: Pawn[]
-  ball: string
+  ball: { team: Team; position: string }[]
 }
 
 export const FORMATION: Formation =
@@ -42,5 +42,14 @@ export const FORMATION: Formation =
     { team: 'red', role: 'F', position: '9F', label: 'Forward', isCaptain: false },
     { team: 'red', role: 'F', position: '4F', label: 'Second forward', isCaptain: false }
   ],
-  ball: '9E'
+  ball: [
+    {
+     team: 'blue',
+     position: '9E'
+    },
+    {
+     team: 'red',
+     position: '8F'
+    }
+  ]
 }

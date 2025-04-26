@@ -3,7 +3,7 @@ import { FORMATION } from '@/types/formations';
 
 export function initializeGameState(): GameState {
 
-  const board =  {
+  const board = {
     board: {
       blue: {
         G: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'G').map(p => p.position),
@@ -24,7 +24,7 @@ export function initializeGameState(): GameState {
         blue: ['0D', '0E', '0F', '0G'],
         red: ['17D', '17E', '17F', '17G']
       },
-      ball:FORMATION.ball
+      ball: FORMATION.ball.find(b => b.team === 'blue')?.position || ''
     },
     currentTurn: 'blue',
     moves: [],

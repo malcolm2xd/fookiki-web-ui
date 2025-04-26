@@ -321,8 +321,6 @@ function updateTurnTimer() {
 }
 
 async function startGame() {
-  console.log('Starting game...')
-
   const opponent = selectedOpponent.value
 
   if (opponent === 'same_screen_online') {

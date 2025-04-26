@@ -71,11 +71,11 @@ export const useGameStore = defineStore('game', {
   getters: {
     totalDimensions: (state) => getTotalDimensions(state.gridConfig),
     allPlayers: (state) => state.players,
-    bluePlayers: (state) => state.players.filter((p:Player) => p.team === 'blue'),
-    redPlayers: (state) => state.players.filter((p:Player) => p.team === 'red'),
-    selectedPlayer: (state) => state.players.find((p:Player) => p.id === state.selectedPlayerId),
+    bluePlayers: (state) => state.players.filter((p: Player) => p.team === 'blue'),
+    redPlayers: (state) => state.players.filter((p: Player) => p.team === 'red'),
+    selectedPlayer: (state) => state.players.find((p: Player) => p.id === state.selectedPlayerId),
     getCell: (state) => (position: Position) => {
-      const player = state.players.find((p:Player) => p.position.row === position.row && p.position.col === position.col);
+      const player = state.players.find((p: Player) => p.position.row === position.row && p.position.col === position.col);
       return {
         position,
         player,
@@ -89,36 +89,20 @@ export const useGameStore = defineStore('game', {
       // Clean up any existing timers first
       this.stopGameTimer()
       this.stopTurnTimer()
-      
+      this.currentTeam = 'blue'
+
       // Reset timer states
       this.timerState = {
         timeLeft: this.timerConfig.duration,
         isRunning: false,
         timerId: null
       }
-      
+
       this.gameTimerState = {
         timeLeft: this.timerConfig.gameDuration,
         isRunning: false,
         timerId: null,
         isExtraTime: false
-      }
-
-      // Helper function to mirror a position horizontally and vertically
-      const mirrorPosition = (pos: string): string => {
-        const letter = pos.slice(-1)
-        const number = parseInt(pos.slice(0, -1))
-        const col = letter.charCodeAt(0) - 65  // Convert A-J to 0-9
-        
-        // Mirror horizontally
-        const mirroredCol = 9 - col  // Mirror horizontally (9 is the last column)
-        const mirroredLetter = String.fromCharCode(65 + mirroredCol)  // Convert back to letter
-        
-        // Mirror vertically across the half line (row 8)
-        // For example: 3→13, 4→12, 5→11, 6→10, 7→9, 8→8, 9→7, 10→6, 11→5, 12→4, 13→3
-        const mirroredNumber = 16 - number + 1
-        
-        return `${mirroredNumber}${mirroredLetter}`
       }
 
       FORMATION.positions.forEach(pos => {
@@ -131,12 +115,9 @@ export const useGameStore = defineStore('game', {
           isCaptain: pos.isCaptain
         })
       })
-      this.ballPosition = {
-        row: 8, //TODO: have a common method for this and reset
-        col: 4
-      }
-      
-      this.currentTeam = 'blue'
+
+      this.ballPosition = parsePosition(FORMATION.ball.find(p => p.team === this.currentTeam)?.position ?? '')
+
       this.selectedPlayerId = null
       this.validMoves = []
       this.gamePhase = 'BALL_MOVEMENT'  // Start with ball movement phase
@@ -147,7 +128,7 @@ export const useGameStore = defineStore('game', {
       // Set up initial ball movement options
       const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
       const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
-      
+
       if (currentTeamAdjacentPlayers.length > 0) {
         // Calculate possible ball moves based on current team's adjacent players
         const possibleBallMoves = new Set<Position>()
@@ -171,7 +152,7 @@ export const useGameStore = defineStore('game', {
         // For first move, only allow ball movement
         const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
         const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-        
+
         if (currentTeamAdjacentPlayers.length > 0) {
           const possibleBallMoves = new Set<Position>();
           currentTeamAdjacentPlayers.forEach(p => {
@@ -188,7 +169,7 @@ export const useGameStore = defineStore('game', {
       // For subsequent moves, handle ball selection
       const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
       const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-      
+
       if (currentTeamAdjacentPlayers.length > 0) {
         const possibleBallMoves = new Set<Position>();
         currentTeamAdjacentPlayers.forEach(p => {
@@ -229,25 +210,7 @@ export const useGameStore = defineStore('game', {
         player.position = { ...player.initialPosition }
       })
 
-      // Find the current team's forward player
-      const currentTeamForward = this.players.find((p: Player) => 
-        p.team === this.currentTeam && 
-        p.role === 'F'
-      )
-
-      if (currentTeamForward) {
-        // Place the ball in front of the forward across the half line
-        this.ballPosition = {
-          row: this.currentTeam === 'blue' ? 8 : 7,  // Half line for blue, one row above for red
-          col: currentTeamForward.position.col
-        }
-      } else {
-        // Fallback position if no forward is found
-        this.ballPosition = this.currentTeam === 'blue' 
-          ? { row: 8, col: 4 }  // E9 position for blue
-          : { row: 7, col: 5 }  // F8 position for red
-      }
-
+      this.ballPosition = parsePosition(FORMATION.ball.find(p => p.team === this.currentTeam)?.position ?? '')
       // Reset selection states
       this.selectedPlayerId = null
       this.validMoves = []
@@ -256,7 +219,7 @@ export const useGameStore = defineStore('game', {
       // Set up initial ball movement options
       const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
       const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam)
-      
+
       if (currentTeamAdjacentPlayers.length > 0) {
         // Calculate possible ball moves based on current team's adjacent players
         const possibleBallMoves = new Set<Position>()
@@ -269,7 +232,7 @@ export const useGameStore = defineStore('game', {
     },
 
     getAdjacentPlayers(position: Position): Player[] {
-      return this.players.filter((player:Player) => {
+      return this.players.filter((player: Player) => {
         const rowDiff = Math.abs(player.position.row - position.row)
         const colDiff = Math.abs(player.position.col - position.col)
         return (rowDiff <= 1 && colDiff <= 1) // Adjacent including diagonals
@@ -282,9 +245,9 @@ export const useGameStore = defineStore('game', {
 
       // Helper to check if a position is occupied by an opponent
       const hasOpponent = (r: number, c: number): Player | null => {
-        return this.players.find((p:Player) => 
-          p.team !== player.team && 
-          p.position.row === r && 
+        return this.players.find((p: Player) =>
+          p.team !== player.team &&
+          p.position.row === r &&
           p.position.col === c
         ) || null
       }
@@ -314,21 +277,21 @@ export const useGameStore = defineStore('game', {
       const addMove = (r: number, c: number) => {
         // Allow goal cells (-1 and 16 for goals)
         const isGoal = (r === -1 || r === 16) && c >= 3 && c <= 6
-        const isWithinField = r >= 0 && r < this.gridConfig.playingField.rows && 
-                             c >= 0 && c < this.gridConfig.playingField.cols
-        
+        const isWithinField = r >= 0 && r < this.gridConfig.playingField.rows &&
+          c >= 0 && c < this.gridConfig.playingField.cols
+
         // Check if position is valid (either within field or a goal cell)
         if (isGoal || isWithinField) {
           // Check if position is occupied by any player
-          const playerAtPosition = this.players.find((p:Player) => 
-            p.position.row === r && 
+          const playerAtPosition = this.players.find((p: Player) =>
+            p.position.row === r &&
             p.position.col === c
           )
 
           if (!playerAtPosition) {
             // Check if path is blocked by opponents
             if (!isPathBlocked(row, col, r, c)) {
-            moves.push({ row: r, col: c })
+              moves.push({ row: r, col: c })
             }
           }
         }
@@ -386,25 +349,25 @@ export const useGameStore = defineStore('game', {
       // Calculate direction from ball to opponent
       const rowDiff = opponentRow - ballRow
       const colDiff = opponentCol - ballCol
-      
+
       // Calculate position beyond opponent
       const beyondRow = opponentRow + (rowDiff > 0 ? 1 : rowDiff < 0 ? -1 : 0)
       const beyondCol = opponentCol + (colDiff > 0 ? 1 : colDiff < 0 ? -1 : 0)
-      
+
       // Check if the beyond position is valid and not occupied
-      const isWithinField = beyondRow >= 0 && beyondRow < this.gridConfig.playingField.rows && 
-                           beyondCol >= 0 && beyondCol < this.gridConfig.playingField.cols
-      
+      const isWithinField = beyondRow >= 0 && beyondRow < this.gridConfig.playingField.rows &&
+        beyondCol >= 0 && beyondCol < this.gridConfig.playingField.cols
+
       if (isWithinField) {
-        const isOccupied = this.players.some((p:Player) => 
+        const isOccupied = this.players.some((p: Player) =>
           p.position.row === beyondRow && p.position.col === beyondCol
         )
-        
+
         if (!isOccupied) {
           return { row: beyondRow, col: beyondCol }
         }
       }
-      
+
       return null
     },
 
@@ -426,16 +389,16 @@ export const useGameStore = defineStore('game', {
         // Check if the move is within the grid bounds
         const { row, col } = move;
         const isWithinBounds = row >= 0 && row < this.gridConfig.playingField.rows &&
-                             col >= 0 && col < this.gridConfig.playingField.cols;
-        
+          col >= 0 && col < this.gridConfig.playingField.cols;
+
         // Check if the move would land on the ball
         const isOnBall = row === this.ballPosition.row && col === this.ballPosition.col;
-        
+
         // Check if the move would land on another player
-        const isOnPlayer = this.players.some((p:Player) => 
+        const isOnPlayer = this.players.some((p: Player) =>
           p.position.row === row && p.position.col === col
         );
-        
+
         return isWithinBounds && !isOnBall && !isOnPlayer;
       });
     },
@@ -457,7 +420,7 @@ export const useGameStore = defineStore('game', {
           // If clicking on the ball, calculate valid moves
           const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
           const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-          
+
           if (currentTeamAdjacentPlayers.length > 0) {
             const possibleBallMoves = new Set<Position>();
             currentTeamAdjacentPlayers.forEach(p => {
@@ -467,7 +430,7 @@ export const useGameStore = defineStore('game', {
             this.isBallSelected = true;
             this.selectedPlayerId = null;
           }
-        } else if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
+        } else if (this.validMoves.some((move: Position) => move.row === position.row && move.col === position.col)) {
           // Move the ball
           this.ballPosition = position;
           this.validMoves = [];
@@ -485,7 +448,7 @@ export const useGameStore = defineStore('game', {
           // If clicking on the ball, calculate valid moves
           const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
           const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-          
+
           if (currentTeamAdjacentPlayers.length > 0) {
             const possibleBallMoves = new Set<Position>();
             currentTeamAdjacentPlayers.forEach(p => {
@@ -496,11 +459,11 @@ export const useGameStore = defineStore('game', {
             this.gamePhase = 'BALL_MOVEMENT';
             this.selectedPlayerId = null;
           }
-        } else if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
+        } else if (this.validMoves.some((move: Position) => move.row === position.row && move.col === position.col)) {
           // Check if there's an opponent player at the target position
-          const opponentPlayer = this.players.find((p:Player) => 
-            p.team !== this.currentTeam && 
-            p.position.row === position.row && 
+          const opponentPlayer = this.players.find((p: Player) =>
+            p.team !== this.currentTeam &&
+            p.position.row === position.row &&
             p.position.col === position.col
           );
 
@@ -508,7 +471,7 @@ export const useGameStore = defineStore('game', {
             // Find the player who's moving the ball
             const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
             const currentTeamAdjacentPlayer = adjacentPlayers.find(p => p.team === this.currentTeam);
-            
+
             if (currentTeamAdjacentPlayer) {
               const canMovePast = this.canMovePastOpponent(currentTeamAdjacentPlayer.role, opponentPlayer.role);
               if (!canMovePast) {
@@ -522,10 +485,10 @@ export const useGameStore = defineStore('game', {
           }
 
           // Check if the ball would move onto a player
-          const wouldMoveOntoPlayer = this.players.some((p:Player) => 
+          const wouldMoveOntoPlayer = this.players.some((p: Player) =>
             p.position.row === position.row && p.position.col === position.col
           );
-          
+
           if (!wouldMoveOntoPlayer) {
             const oldBallPosition = { ...this.ballPosition };
             this.ballPosition = position;
@@ -535,7 +498,7 @@ export const useGameStore = defineStore('game', {
 
             // Check for goal
             const isInGoalCell = position.col >= 3 && position.col <= 6 && (position.row === -1 || position.row === 16);
-            
+
             if (isInGoalCell) {
               if (position.row === -1) {
                 this.score.red++;
@@ -566,9 +529,9 @@ export const useGameStore = defineStore('game', {
               // Check for captain's special ability
               const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition);
               const currentTeamAdjacentPlayers = adjacentPlayers.filter(p => p.team === this.currentTeam);
-              
+
               // Check if ball was passed from a captain and captain hasn't used their special ability yet
-              const wasPassedFromCaptain = this.getAdjacentPlayers(oldBallPosition).some(p => 
+              const wasPassedFromCaptain = this.getAdjacentPlayers(oldBallPosition).some(p =>
                 p.team === this.currentTeam && p.isCaptain
               );
 
@@ -586,7 +549,7 @@ export const useGameStore = defineStore('game', {
                 this.validMoves = Array.from(possibleBallMoves);
                 this.isBallSelected = true;
                 this.canCaptainMoveAgain = true; // Mark that captain has used their special ability
-                
+
                 // Reset turn timer for the receiving player
                 this.resetTurnTimer();
                 this.startTurnTimer();
@@ -624,9 +587,9 @@ export const useGameStore = defineStore('game', {
           this.gamePhase = 'PLAYER_SELECTION';
         }
       } else if (this.selectedPlayerId) {
-        if (this.validMoves.some((move:Position) => move.row === position.row && move.col === position.col)) {
+        if (this.validMoves.some((move: Position) => move.row === position.row && move.col === position.col)) {
           // Valid move selected
-          const player = this.players.find((p:Player) => p.id === this.selectedPlayerId);
+          const player = this.players.find((p: Player) => p.id === this.selectedPlayerId);
           if (player) {
             player.position = position;
             this.selectedPlayerId = null;
@@ -660,7 +623,7 @@ export const useGameStore = defineStore('game', {
       console.log('Starting timer with ID:', this.timerState.timerId)
     },
 
-    stopTurnTimer() {     
+    stopTurnTimer() {
       if (this.timerState.timerId) {
         clearInterval(this.timerState.timerId)
         this.timerState.timerId = null
@@ -670,7 +633,7 @@ export const useGameStore = defineStore('game', {
 
     resetTurnTimer() {
       if (!this.timerConfig.enabled) return;
-      
+
       this.stopTurnTimer();
       this.timerConfig.remainingTime = this.timerConfig.duration;
       this.timerConfig.progress = 100;
@@ -714,7 +677,7 @@ export const useGameStore = defineStore('game', {
       // Clean up timers first
       this.stopGameTimer()
       this.stopTurnTimer()
-      
+
       // Check if scores are tied and we're not already in extra time
       if (this.score.blue === this.score.red && !this.gameTimerState.isExtraTime) {
         // Reset timer states before starting extra time
@@ -723,14 +686,14 @@ export const useGameStore = defineStore('game', {
           isRunning: false,
           timerId: null
         }
-        
+
         this.gameTimerState = {
           timeLeft: this.timerConfig.extraTimeDuration,
           isRunning: false,
           timerId: null,
           isExtraTime: true
         }
-        
+
         // Start extra time
         this.timerConfig.duration = this.timerConfig.extraTimeTurnDuration
         this.startGameTimer()
@@ -750,10 +713,10 @@ export const useGameStore = defineStore('game', {
         // If scores are tied after extra time, it's a draw
         this.winner = null
       }
-      
+
       this.gamePhase = 'GAME_OVER'
       // alert(`Game Over! ${this.winner === 'blue' ? 'Blue' : this.winner === 'red' ? 'Red' : 'It\'s a'} ${this.winner ? 'team wins!' : 'draw!'}`)
-      
+
       // Reset the game after a short delay
       setTimeout(() => {
         this.initializeGame()
@@ -775,7 +738,7 @@ export const useGameStore = defineStore('game', {
       this.celebration.show = false;
       this.celebration.team = null;
       this.celebration.message = '';
-      
+
       // Restart timers after celebration
       this.startGameTimer();
       if (this.timerConfig.enabled) {
@@ -805,10 +768,10 @@ export const useGameStore = defineStore('game', {
       return false;
     },
   },
-}) 
+})
 
-export type { 
-  GameMode, 
+export type {
+  GameMode,
   GameState
 } from '@/types/game'
 
