@@ -367,6 +367,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   async function makeMove(from: [number, number], to: [number, number], type: string) {
     try {
+      console.log("Making move", from, to, type)
       // Ensure current user is in the room
       if (!currentRoom.value || !auth.currentUser) {
         console.error('Cannot make move: No current room or user')
@@ -384,25 +385,28 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       const gameState = getGameState() // Use safe getter
 
       function toNotation(row: number, col: number): string {
-        const colLetter = String.fromCharCode('a'.charCodeAt(0) + col);
+        const colLetter = String.fromCharCode('A'.charCodeAt(0) + col);
         return `${row + 1}${colLetter}`;
       }
+
       const fromNotation = toNotation(from[0], from[1]);
       const toNotationStr = toNotation(to[0], to[1]);
 
       // Deep clone the board to avoid mutating the original state
       const updatedBoard = JSON.parse(JSON.stringify(gameState.board));
-
       if (type === "player") {
+        
         // Find and move the player
         let found = false;
-        for (const team of ['blue', 'red']) {
-          for (const role of ['G', 'D', 'M', 'F']) {
+        for (const team in updatedBoard) {
+          for (const role in updatedBoard[team]) {
             const idx = updatedBoard[team][role].indexOf(fromNotation);
             if (idx !== -1) {
-              updatedBoard[team][role].splice(idx, 1); // Remove from old position
-              updatedBoard[team][role].push(toNotationStr); // Add to new position
+              // updatedBoard[team][role].splice(idx, 1); // Remove from old position
+              // updatedBoard[team][role].push(toNotationStr); // Add to new position
+              updatedBoard[team][role][idx] = toNotationStr;
               found = true;
+              console.log("Found ",team,role," player at ", fromNotation, "to", toNotationStr)
               break;
             }
           }
@@ -410,9 +414,11 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         }
       } else if (type === "ball") {
         // Move the ball
-        if (updatedBoard.ball && fromNotation === updatedBoard.ball.toLowerCase()) {
+        if (updatedBoard.ball && fromNotation === updatedBoard.ball) {
           updatedBoard.ball = toNotationStr;
         }
+      } else {
+        console.log("This has never worked")
       }
       gameState.board = updatedBoard;
 
@@ -425,7 +431,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       const updateData: Record<string, any> = {
-        'gameState': gameState,
+        // 'gameState': gameState,
         'gameState.board': gameState.board,
         'gameState.moves': gameState.moves.concat(move),
         'gameState.currentTurn': getNextTurnPlayer(),
@@ -435,12 +441,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
       // Atomic update to ensure consistency
       await updateDoc(roomRef, updateData)
-
-      // Optional: Additional validation or logging
-      const updatedDoc = await getDoc(roomRef)
-      if (updatedDoc.exists()) {
-        const docData = updatedDoc.data()
-      }
     } catch (error) {
       console.error('Error making move:', error)
     }
