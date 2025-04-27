@@ -338,9 +338,10 @@ async function startGame() {
         },
         gameState: {
           board: {
-            blue: { G: [], D: [], M: [], F: [] },
-            red: { G: [], D: [], M: [], F: [] },
-            goals: { blue: [], red: [] }
+            blue: { G: [], D: [], M: [], F: [], C: [] },
+            red: { G: [], D: [], M: [], F: [], C: [] },
+            goals: { blue: [], red: [] },
+            ball : ""
           },
           currentTurn: null,
           timestamp: Date.now()

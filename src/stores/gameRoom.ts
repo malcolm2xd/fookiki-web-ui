@@ -331,9 +331,10 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
         ...roomData.players,
         [auth.currentUser.uid]: playerData
       }
-
       // Update Firestore document
-      const gameState = roomData.gameState ? roomData.gameState : getGameState()
+
+      const gameState = roomData.gameState?.board.ball ? roomData.gameState : getGameState()
+      
       await updateDoc(roomRef, {
         players: updatedPlayers,
         gameState: gameState,
@@ -368,7 +369,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   async function makeMove(from: [number, number], to: [number, number], type: string) {
     try {
-      console.log("Making move", from, to, type)
       // Ensure current user is in the room
       if (!currentRoom.value || !auth.currentUser) {
         console.error('Cannot make move: No current room or user')
@@ -407,7 +407,6 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
               // updatedBoard[team][role].push(toNotationStr); // Add to new position
               updatedBoard[team][role][idx] = toNotationStr;
               found = true;
-              console.log("Found ",team,role," player at ", fromNotation, "to", toNotationStr)
               break;
             }
           }

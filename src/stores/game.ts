@@ -86,7 +86,8 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    initializeGame(ongoingGameBoard?:GameBoard) {
+    initializeGame(ongoingGameBoard?: GameBoard) {
+      console.log('Initializing game with board:', ongoingGameBoard)
       // Clean up any existing timers first
       this.stopGameTimer()
       this.stopTurnTimer()
@@ -106,10 +107,10 @@ export const useGameStore = defineStore('game', {
         isExtraTime: false
       }
       this.players = []
-      if(ongoingGameBoard) {
-        for(const team of ['blue', 'red']){
-          for(const role of ['G','F','M','D','C']){
-            for(const pawn of ongoingGameBoard[team as Team][role as PlayerRole]){
+      if (ongoingGameBoard) {
+        for (const team of ['blue', 'red']) {
+          for (const role of ['G', 'F', 'M', 'D', 'C']) {
+            for (const pawn of ongoingGameBoard[team as Team][role as PlayerRole]) {
               this.players.push({
                 id: `${team}-${role}-${pawn}`,
                 team: team as Team,
@@ -136,7 +137,7 @@ export const useGameStore = defineStore('game', {
           })
         })
         this.ballPosition = parsePosition(FORMATION.ball.find(p => p.team === this.currentTeam)?.position ?? '')
-      this.isFirstMove = true
+        this.isFirstMove = true
 
       }
 
