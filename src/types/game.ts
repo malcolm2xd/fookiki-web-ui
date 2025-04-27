@@ -9,26 +9,30 @@ export interface GamePlayer {
   score: number;
 }
 
-export interface GameState {
-  board: {
-    blue: {
-      G: string[];
-      D: string[];
-      M: string[];
-      F: string[];
-    };
-    red: {
-      G: string[];
-      D: string[];
-      M: string[];
-      F: string[];
-    };
-    goals: {
-      blue: string[];
-      red: string[];
-    };
-    ball: string;
+export interface GameBoard {
+  blue: {
+    G: string[];
+    C: string[];
+    D: string[];
+    M: string[];
+    F: string[];
   };
+  red: {
+    G: string[];
+    C: string[];
+    D: string[];
+    M: string[];
+    F: string[];
+  };
+  goals: {
+    blue: string[];
+    red: string[];
+  };
+  ball: string;
+}
+
+export interface GameState {
+  board: GameBoard;
   currentTurn: string | null;
   moves: {
     from: [number, number];
@@ -49,12 +53,14 @@ export interface GameRoom {
     board: {
       blue: {
         G: string[];
+        C: string[];
         D: string[];
         M: string[];
         F: string[];
       };
       red: {
         G: string[];
+        C: string[];
         D: string[];
         M: string[];
         F: string[];
@@ -63,6 +69,7 @@ export interface GameRoom {
         blue: string[];
         red: string[];
       };
+      ball: string;
     };
     currentTurn: string | null;
     timestamp: number;
@@ -97,17 +104,4 @@ export interface GameConfig {
   goalTarget: number;
   goalGap: number;
   formation: string;
-}
-
-export interface Formation {
-  name: string;
-  description: string;
-  default: boolean;
-  positions: {
-    G: string[];
-    D: string[];
-    M: string[];
-    F: string[];
-  };
-  ball: string;
 }

@@ -1,10 +1,13 @@
-import { GameState } from '@/types/game';
+import { GameState, GameBoard } from '@/types/game';
 import { FORMATION } from '@/types/formations';
 
-export function initializeGameState(): GameState {
+export function initializeGameState(ongoing_formation?:GameBoard): GameState {
+  let board:GameBoard
 
-  const board = {
-    board: {
+  if(ongoing_formation) {
+    board = ongoing_formation
+  } else {
+    board = {
       blue: {
         G: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'G').map(p => p.position),
         C: FORMATION.positions.filter(p => p.team === 'blue' && p.role === 'C').map(p => p.position),
@@ -25,11 +28,15 @@ export function initializeGameState(): GameState {
         red: ['17D', '17E', '17F', '17G']
       },
       ball: FORMATION.ball.find(b => b.team === 'blue')?.position || ''
-    },
+    }
+  }
+
+  const gameState = {
+    board ,
     currentTurn: 'blue',
     moves: [],
     timestamp: Date.now()
   };
   // console.error('setting board:' + JSON.stringify(board, null, 2))
-  return board
+  return gameState
 }

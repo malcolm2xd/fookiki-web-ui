@@ -5,6 +5,7 @@ import { DEFAULT_GRID_CONFIG, getTotalDimensions } from '@/types/grid'
 import { FORMATION } from '@/types/formations'
 import { getValidMoves } from '@/types/player'
 import { Player, Position, Team, PlayerRole } from '@/types/player'
+import { GameBoard } from '@/types/game'
 
 // Convert from letter-number format (e.g., '3A') to Position
 function parsePosition(coord: string): Position {
@@ -85,7 +86,7 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    initializeGame() {
+    initializeGame(ongoingGameBoard?:GameBoard) {
       // Clean up any existing timers first
       this.stopGameTimer()
       this.stopTurnTimer()
@@ -104,26 +105,47 @@ export const useGameStore = defineStore('game', {
         timerId: null,
         isExtraTime: false
       }
-
-      FORMATION.positions.forEach(pos => {
-        this.players.push({
-          id: `${pos.team}-${pos.role}-${pos.position}`,
-          team: pos.team,
-          role: pos.role,
-          position: parsePosition(pos.position),
-          initialPosition: { ...parsePosition(pos.position) },
-          isCaptain: pos.isCaptain
+      this.players = []
+      if(ongoingGameBoard) {
+        for(const team of ['blue', 'red']){
+          for(const role of ['G','F','M','D','C']){
+            for(const pawn of ongoingGameBoard[team as Team][role as PlayerRole]){
+              this.players.push({
+                id: `${team}-${role}-${pawn}`,
+                team: team as Team,
+                role: role as PlayerRole,
+                position: parsePosition(pawn),
+                initialPosition: { ...parsePosition(pawn) },
+                isCaptain: role === 'F'
+              })
+            }
+          }
+        }
+        this.ballPosition = parsePosition(ongoingGameBoard.ball)
+        // this.currentTeam = this.ballPosition.col % 2 === 0 ? 'blue' : 'red'
+        this.isFirstMove = false
+      } else {
+        FORMATION.positions.forEach(pos => {
+          this.players.push({
+            id: `${pos.team}-${pos.role}-${pos.position}`,
+            team: pos.team,
+            role: pos.role,
+            position: parsePosition(pos.position),
+            initialPosition: { ...parsePosition(pos.position) },
+            isCaptain: pos.isCaptain
+          })
         })
-      })
+        this.ballPosition = parsePosition(FORMATION.ball.find(p => p.team === this.currentTeam)?.position ?? '')
+      this.isFirstMove = true
 
-      this.ballPosition = parsePosition(FORMATION.ball.find(p => p.team === this.currentTeam)?.position ?? '')
+      }
+
 
       this.selectedPlayerId = null
       this.validMoves = []
       this.gamePhase = 'BALL_MOVEMENT'  // Start with ball movement phase
       this.score = { blue: 0, red: 0 }
       this.winner = null
-      this.isFirstMove = true
 
       // Set up initial ball movement options
       const adjacentPlayers = this.getAdjacentPlayers(this.ballPosition)
@@ -413,7 +435,6 @@ export const useGameStore = defineStore('game', {
         this.gamePhase = 'PLAYER_SELECTION';
         return;
       }
-
       // If it's the first move, only allow ball movement
       if (this.isFirstMove) {
         if (cell.hasBall) {

@@ -82,6 +82,7 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
 
   // Safe getter for game state
   function getGameState(): GameState {
+
     if (!currentRoom.value?.gameState) {
       // Return a default game state if no game state exists
       return initializeGameState()
@@ -332,18 +333,18 @@ export const useGameRoomStore = defineStore('gameRoom', () => {
       }
 
       // Update Firestore document
+      const gameState = roomData.gameState ? roomData.gameState : getGameState()
       await updateDoc(roomRef, {
         players: updatedPlayers,
-        gameState: initializeGameState(),
+        gameState: gameState,
         status: Object.keys(updatedPlayers).length === 2 ? 'ready' : 'waiting',
         updatedAt: Date.now()
       })
 
       // Use the game store to initialize players
       const store = useGameStore()
-
       // Initialize the game with the selected formation
-      store.initializeGame()
+      store.initializeGame(gameState.board)
       // Listen for room updates
       const unsubscribe = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
